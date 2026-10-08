@@ -26,6 +26,7 @@ html,body{margin:0}
   --ok:#2d7a3e; --ok-soft:#dbefdf;
   --paper:#fffef9; --ink:#14213d;
   --brand:#1e5b8c; --brand-ink:#ffffff;
+  --khoa:#216c4a; --khoa-dark:#15472f; --khoa-ink:#ffffff;
   --display:-apple-system,"SF Pro Rounded",system-ui,"Segoe UI",Roboto,sans-serif;
   --body:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -65,18 +66,20 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 h1{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .clock{color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
 .stats{display:flex;gap:6px;flex-wrap:wrap}
-.stat{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:.92rem}
+.stat{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;background:var(--surface);color:var(--fg);border:1px solid var(--line);font:inherit;font-size:.92rem;font-weight:600;cursor:pointer}
+.stat[aria-pressed="true"]{background:var(--khoa);color:var(--khoa-ink);border-color:var(--khoa)}
 .stat b{font-family:var(--mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
-.dot{width:10px;height:10px;border-radius:50%}
+.dot{width:12px;height:12px;border-radius:50%}
+.stat[aria-pressed="true"] .dot{box-shadow:0 0 0 2px var(--khoa-ink)}
 .tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:12px;width:max-content;max-width:100%;overflow-x:auto}
 .tabs button{border:0;background:none;padding:7px 14px;border-radius:9px;font-weight:600;color:var(--muted);white-space:nowrap}
-.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0/.12)}
+.tabs button[aria-selected="true"]{background:var(--khoa);color:var(--khoa-ink);box-shadow:0 1px 3px rgb(0 0 0/.18)}
 
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-block:10px 10px}
 .search{flex:1 1 220px;min-width:0;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:999px;font-size:.9rem;font-weight:500}
-.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip[aria-pressed="true"]{background:var(--khoa);color:var(--khoa-ink);border-color:var(--khoa)}
 
 /* key-tag rack */
 .rack{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
@@ -204,9 +207,9 @@ textarea.t{resize:vertical;min-height:60px}
 <div class="wrap">
   <header class="top">
     <div class="stats">
-      <span class="stat"><span class="dot" style="background:var(--ok)"></span>Trong kho <b id="sKho">–</b></span>
-      <span class="stat"><span class="dot" style="background:var(--out)"></span>Đang cho mượn <b id="sMuon">–</b></span>
-      <span class="stat"><span class="dot" style="background:var(--bad)"></span>Mất / hỏng <b id="sHong">–</b></span>
+      <button type="button" class="stat" data-f="kho" aria-pressed="false"><span class="dot" style="background:var(--ok)"></span>Trong kho <b id="sKho">–</b></button>
+      <button type="button" class="stat" data-f="muon" aria-pressed="false"><span class="dot" style="background:var(--out)"></span>Đang cho mượn <b id="sMuon">–</b></button>
+      <button type="button" class="stat" data-f="hong" aria-pressed="false"><span class="dot" style="background:var(--bad)"></span>Mất / hỏng <b id="sHong">–</b></button>
     </div>
     <div class="tabs" role="tablist">
       <button role="tab" id="tab-the" aria-selected="true">Thẻ</button>
@@ -349,7 +352,11 @@ textarea.t{resize:vertical;min-height:60px}
   }));
   function chipGroup(sel, set){ $(sel).addEventListener("click", e => { const b=e.target.closest(".chip"); if(!b) return;
     $(sel).querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c===b)); set(b.dataset.f); render(); }); }
-  chipGroup("#f1", v=>f1=v); chipGroup("#f2", v=>f2=v); chipGroup("#f3", v=>{f3=v; bcTouched=false;});
+  function syncF1(){ $("#f1").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.f===f1));
+    document.querySelectorAll(".stat").forEach(b=>b.setAttribute("aria-pressed", b.dataset.f===f1)); }
+  chipGroup("#f1", v=>{ f1=v; syncF1(); }); chipGroup("#f2", v=>f2=v);
+  document.querySelector(".stats").addEventListener("click", e => { const b=e.target.closest(".stat"); if(!b) return;
+    f1 = f1===b.dataset.f ? "all" : b.dataset.f; syncF1(); $("#tab-the").click(); render(); }); chipGroup("#f3", v=>{f3=v; bcTouched=false;});
   $("#q1").addEventListener("input", render); $("#q2").addEventListener("input", render);
 
   /* ---------- render ---------- */

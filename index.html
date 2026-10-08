@@ -282,7 +282,7 @@ textarea.t{resize:vertical;min-height:60px}
         <div class="err" id="maErr" style="margin-bottom:8px"></div>
         <div id="maList"></div>
       </div>
-      <div class="panel">
+      <div class="panel wide">
         <h3>Sao lưu dữ liệu</h3>
         <p>Dữ liệu chỉ nằm trong iPad này. Nên lưu một bản sao (vào ứng dụng Tệp, AirDrop hoặc gửi qua Zalo/email) mỗi tuần, phòng khi máy hỏng hoặc bị xoá dữ liệu Safari.</p>
         <div class="inline">
@@ -793,7 +793,7 @@ textarea.t{resize:vertical;min-height:60px}
   async function autoSnap(force){
     try {
       const key = dayKey(new Date()), keys = await db.snapKeys();
-      if(!force && keys.includes(key)) return;
+      if(!force && keys.includes(key)){ renderSnaps(); return; }
       const docs = db.dump();
       if(!Object.keys(docs).some(k=>k.startsWith("luot/")) && !Object.values(docs).some(v=>v && v.ma)) { renderSnaps(); return; } // nothing worth saving yet
       await db.snapPut(key, {luc:new Date().toISOString(), docs});

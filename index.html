@@ -1,0 +1,884 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Quản lý thẻ thang máy</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Thẻ thang máy">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#216c4a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+html,body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+/* Layout: sticky summary bar → tab strip → card rack (grid of key tags) / history ledger; bottom sheets for hand-over and return */
+:root{
+  --bg:#f2f5f6; --surface:#ffffff; --sunk:#e6ecee; --line:#d3dcdf;
+  --fg:#16252b; --muted:#5d6f76;
+  --accent:#0f6f7c; --accent-ink:#ffffff; --accent-soft:#d6eef0;
+  --out:#b8560f; --out-soft:#fbe8d8;
+  --bad:#b3261e; --bad-soft:#f8dcda;
+  --ok:#2d7a3e; --ok-soft:#dbefdf;
+  --paper:#fffef9; --ink:#14213d;
+  --brand:#1e5b8c; --brand-ink:#ffffff;
+  --display:-apple-system,"SF Pro Rounded",system-ui,"Segoe UI",Roboto,sans-serif;
+  --body:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1719; --surface:#172225; --sunk:#1e2c30; --line:#2c3d42;
+  --fg:#e4eef0; --muted:#93a8ae;
+  --accent:#4fb8c4; --accent-ink:#06262b; --accent-soft:#163b40;
+  --out:#f0a25e; --out-soft:#3d2a18; --bad:#f2867e; --bad-soft:#40201e;
+  --ok:#7fcf8e; --ok-soft:#1d3a23; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1719; --surface:#172225; --sunk:#1e2c30; --line:#2c3d42;
+  --fg:#e4eef0; --muted:#93a8ae;
+  --accent:#4fb8c4; --accent-ink:#06262b; --accent-soft:#163b40;
+  --out:#f0a25e; --out-soft:#3d2a18; --bad:#f2867e; --bad-soft:#40201e;
+  --ok:#7fcf8e; --ok-soft:#1d3a23; color-scheme:dark}
+*{box-sizing:border-box}
+/* department banner */
+.khoa{background:var(--brand);color:var(--brand-ink);padding-inline:16px;padding-block:14px}
+.khoa-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:10px 14px}
+.logo{flex:none;width:68px;height:68px;display:grid;place-items:center;filter:drop-shadow(0 2px 4px rgb(0 0 0/.25))}
+.logo img{width:100%;height:100%;object-fit:contain}
+.logo span{color:var(--brand);font-weight:800;font-size:1.8rem;line-height:1}
+.khoa-txt{min-width:0}
+.app-name{margin-left:auto;font-family:var(--display);font-weight:800;font-size:1.35rem;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;padding-left:18px;border-left:2px solid rgb(255 255 255/.45)}
+@media (max-width:640px){.khoa-in{flex-wrap:wrap}.app-name{margin-left:0;font-size:1rem;padding-left:0;border-left:0;width:100%}}
+.khoa-ten{font-family:var(--display);font-weight:700;font-size:1.3rem;line-height:1.2}
+.khoa-slogan{font-style:italic;font-weight:600;font-size:.88rem;opacity:.92;margin-top:2px}
+
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:1400px;margin:0 auto;padding-inline:16px;padding-block:0 32px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px 8px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.clock{color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+.stats{display:flex;gap:6px;flex-wrap:wrap}
+.stat{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-size:.92rem}
+.stat b{font-family:var(--mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
+.dot{width:10px;height:10px;border-radius:50%}
+.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:12px;width:max-content;max-width:100%;overflow-x:auto}
+.tabs button{border:0;background:none;padding:7px 14px;border-radius:9px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0/.12)}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-block:10px 10px}
+.search{flex:1 1 220px;min-width:0;padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:999px;font-size:.9rem;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+/* key-tag rack */
+.rack{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+@media (min-width:1000px){.rack{grid-template-columns:repeat(10,minmax(0,1fr))}}
+@media (max-width:600px){.rack{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:400px){.rack{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tag{position:relative;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:8px 8px 7px 10px;display:flex;flex-direction:column;gap:3px;min-height:92px;min-width:0;transition:transform .12s}
+.tag:active{transform:scale(.97)}
+.tag .num{font-family:var(--mono);font-weight:700;font-size:1.35rem;line-height:1.05;letter-spacing:-.02em}
+.tag .code{font-family:var(--mono);line-height:1.05;min-width:0;padding-right:22px}
+.tag .code .pre{display:block;font-size:.72rem;font-weight:600;color:var(--muted);letter-spacing:.02em;overflow-wrap:anywhere}
+.tag .code .end{display:block;font-size:1.4rem;font-weight:800;letter-spacing:.01em}
+.tag .nocode{font-size:.7rem;color:var(--muted);font-style:italic}
+.tag .stt{position:absolute;top:6px;right:6px;font-family:var(--mono);font-size:.68rem;font-weight:700;color:var(--muted);background:var(--sunk);border-radius:6px;padding:1px 5px}
+.tag .state{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag .who{font-size:.85rem;font-weight:600;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.tag .sub{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.late.soft{background:var(--sunk);color:var(--muted)}
+.tag.kho{border-left:5px solid var(--ok)} .tag.kho .state{color:var(--ok)}
+.tag.muon{border-left:5px solid var(--out);background:linear-gradient(var(--out-soft),var(--surface) 80%)} .tag.muon .state{color:var(--out)}
+.tag.hong{border-left:5px solid var(--bad);opacity:.85} .tag.hong .state{color:var(--bad)}
+.late{font-size:.66rem!important;display:inline-block;margin-left:4px;padding:0 5px;border-radius:5px;background:var(--bad-soft);color:var(--bad);font-size:.72rem;font-weight:600;text-transform:none;letter-spacing:0}
+
+.empty{padding:40px 20px;text-align:center;color:var(--muted);border:2px dashed var(--line);border-radius:16px}
+.empty h2{font-family:var(--display);color:var(--fg);font-size:1.2rem;margin:0 0 6px}
+
+/* ledger */
+.ledger{display:flex;flex-direction:column;gap:10px}
+.row{display:grid;grid-template-columns:88px 1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-align:left;width:100%}
+.row .num{font-family:var(--mono);font-weight:800;font-size:1.25rem;text-align:center;padding:6px 0;border-radius:10px;background:var(--sunk);line-height:1.1}
+.row .num small{display:block;font-size:.66rem;font-weight:600;color:var(--muted)}
+.row .main{min-width:0}
+.row .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.pill{font-size:.78rem;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.pill.dang{background:var(--out-soft);color:var(--out)} .pill.tra{background:var(--ok-soft);color:var(--ok)}
+
+/* manage */
+.manage{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+.panel h3{font-family:var(--display);margin:0 0 4px;font-size:1.05rem}
+.panel p{margin:0 0 12px;color:var(--muted);font-size:.9rem}
+.inline{display:flex;gap:8px;flex-wrap:wrap}
+.inline input{flex:1 1 120px;min-width:0}
+.panel.wide{grid-column:1/-1}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table.tbl{width:100%;border-collapse:collapse;font-size:.92rem;font-variant-numeric:tabular-nums}
+.tbl th{text-align:left;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);background:var(--sunk);padding:8px 10px;white-space:nowrap}
+.tbl td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:middle}
+.tbl td.so{font-family:var(--mono);font-weight:700;font-size:1.05rem;white-space:nowrap}
+.tbl td.ma{font-family:var(--mono);white-space:nowrap}
+.tbl input.ma-in{font-family:var(--mono);font-size:.95rem;padding:8px 10px;width:100%;min-width:140px;max-width:240px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--fg)}
+.tbl input.ma-in.dup{border-color:var(--bad);background:var(--bad-soft)}
+.tbl .del{border:0;background:none;color:var(--bad);font-weight:600;padding:6px 8px}
+.tbl .del:disabled{color:var(--muted);opacity:.5}
+.tbl input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
+.st{font-size:.75rem;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.st.kho{background:var(--ok-soft);color:var(--ok)} .st.muon{background:var(--out-soft);color:var(--out)} .st.hong{background:var(--bad-soft);color:var(--bad)}
+.st.it{background:var(--accent-soft);color:var(--accent)}
+.warnline{color:var(--bad);font-size:.88rem;font-weight:500;margin-top:8px}
+.choice{display:flex;gap:10px;flex-wrap:wrap}
+.choice button{flex:1 1 140px;border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:14px;font-weight:700;font-size:1rem}
+.choice button[aria-pressed="true"]{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.bigtag small{display:block;font-size:.7rem;font-weight:600;opacity:.8;letter-spacing:0;margin-top:2px}
+
+/* forms & buttons */
+label.f{display:flex;flex-direction:column;gap:5px;font-size:.85rem;font-weight:600;color:var(--muted)}
+input.t,textarea.t{font:inherit;font-size:1rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px 13px;width:100%}
+textarea.t{resize:vertical;min-height:60px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.btn{border:0;border-radius:12px;padding:13px 20px;font-weight:600;font-size:1rem;background:var(--sunk)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.warn{background:var(--out);color:#fff}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.ghost{background:none;border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgb(10 20 24/.5);z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:0 0 env(safe-area-inset-bottom,0px)}
+@media (min-width:720px){.scrim{align-items:center;padding:24px}}
+.sheet{background:var(--surface);width:100%;max-width:680px;max-height:94dvh;overflow:auto;border-radius:20px 20px 0 0;padding:20px 20px 24px;display:flex;flex-direction:column;gap:14px}
+@media (min-width:720px){.sheet{border-radius:20px}}
+.sheet-head{display:flex;align-items:center;gap:14px}
+.bigtag{font-family:var(--mono);font-weight:700;font-size:1.35rem;max-width:60%;overflow-wrap:anywhere;padding:8px 14px;border-radius:12px;background:var(--accent-soft);color:var(--accent)}
+.sheet-head h2{font-family:var(--display);font-size:1.25rem;margin:0}
+.sheet-head .x{margin-left:auto;border:0;background:var(--sunk);width:40px;height:40px;border-radius:50%;font-size:1.3rem;line-height:1}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.95rem}
+.facts dt{color:var(--muted)} .facts dd{margin:0;font-weight:500;min-width:0;overflow-wrap:anywhere}
+.sigbox{display:flex;flex-direction:column;gap:6px}
+.sighead{display:flex;justify-content:space-between;align-items:baseline;font-size:.85rem;font-weight:600;color:var(--muted)}
+.sighead button{border:0;background:none;color:var(--accent);font-weight:600;padding:4px}
+.pad{position:relative;height:200px;border-radius:14px;border:2px dashed var(--line);background:var(--paper);touch-action:none;overflow:hidden}
+.pad canvas{position:absolute;inset:0;width:100%;height:100%}
+.pad .base{position:absolute;left:24px;right:24px;bottom:44px;border-bottom:1.5px solid #c9c4b5;pointer-events:none}
+.pad .hint{position:absolute;left:24px;bottom:16px;font-size:.8rem;color:#8a8576;pointer-events:none}
+.pad.signed .hint{display:none}
+.sigimg{background:var(--paper);border:1px solid var(--line);border-radius:12px;max-width:100%;height:auto;display:block}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.err{color:var(--bad);font-size:.9rem;font-weight:500}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:500;z-index:40;max-width:calc(100% - 32px)}
+.banner{margin-top:16px;padding:12px 14px;border-radius:12px;background:var(--out-soft);color:var(--out);font-size:.9rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:480px){.row{grid-template-columns:56px 1fr}.row .pill{grid-column:2;justify-self:start}}
+</style>
+</head>
+<body>
+<div class="khoa">
+  <div class="khoa-in">
+    <div class="logo" id="logo"><img src="data:image/webp;base64,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" alt="Logo Khoa Ngoại – Quản lý thẻ thang máy"></div>
+    <div class="khoa-txt">
+      <div class="khoa-ten">Khoa Ngoại tổng hợp</div>
+      <div class="khoa-slogan">Điều trị tận tâm - Chăm sóc tận tình</div>
+    </div>
+    <div class="app-name">Quản lý thẻ thang máy</div>
+  </div>
+</div>
+<div class="wrap">
+  <header class="top">
+    <div class="stats">
+      <span class="stat"><span class="dot" style="background:var(--ok)"></span>Trong kho <b id="sKho">–</b></span>
+      <span class="stat"><span class="dot" style="background:var(--out)"></span>Đang cho mượn <b id="sMuon">–</b></span>
+      <span class="stat"><span class="dot" style="background:var(--bad)"></span>Mất / hỏng <b id="sHong">–</b></span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-the" aria-selected="true">Thẻ</button>
+      <button role="tab" id="tab-ls" aria-selected="false">Lịch sử giao nhận</button>
+      <button role="tab" id="tab-bc" aria-selected="false">Báo IT khoá thẻ</button>
+      <button role="tab" id="tab-ql" aria-selected="false">Quản lý thẻ</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section id="v-the">
+    <div class="toolbar">
+      <input class="search" id="q1" type="search" placeholder="Tìm mã thẻ (gõ vài số cuối), tên bệnh nhân, phòng…" autocomplete="off">
+      <div class="chips" id="f1">
+        <button class="chip" data-f="all" aria-pressed="true">Tất cả</button>
+        <button class="chip" data-f="kho" aria-pressed="false">Trong kho</button>
+        <button class="chip" data-f="muon" aria-pressed="false">Đang mượn</button>
+        <button class="chip" data-f="hong" aria-pressed="false">Mất / hỏng</button>
+      </div>
+    </div>
+    <div class="rack" id="rack"></div>
+  </section>
+
+  <section id="v-ls" hidden>
+    <div class="toolbar">
+      <input class="search" id="q2" type="search" placeholder="Tìm tên bệnh nhân, mã thẻ, SĐT…" autocomplete="off">
+      <div class="chips" id="f2">
+        <button class="chip" data-f="all" aria-pressed="true">Tất cả</button>
+        <button class="chip" data-f="dang" aria-pressed="false">Chưa trả</button>
+        <button class="chip" data-f="tra" aria-pressed="false">Đã trả</button>
+      </div>
+    </div>
+    <div class="ledger" id="ledger"></div>
+  </section>
+
+  <section id="v-bc" hidden>
+    <div class="manage">
+      <div class="panel wide">
+        <h3>Thẻ mất / hỏng cần báo IT khoá mã</h3>
+        <p>Chọn các thẻ cần khoá, rồi gửi danh sách cho IT qua Zalo/email hoặc xuất file Excel. Gửi xong bấm “Đánh dấu đã báo IT” để lần sau không gửi trùng.</p>
+        <div class="toolbar" style="margin-block:0 10px">
+          <div class="chips" id="f3">
+            <button class="chip" data-f="chua" aria-pressed="true">Chưa báo IT</button>
+            <button class="chip" data-f="all" aria-pressed="false">Tất cả thẻ mất / hỏng</button>
+          </div>
+        </div>
+        <div id="bcBody"></div>
+        <div class="warnline" id="bcWarn"></div>
+        <div class="actions" style="margin-top:12px;justify-content:flex-start">
+          <button class="btn primary" id="bcSend">Gửi / sao chép nội dung</button>
+          <button class="btn ghost" id="bcCsv">Xuất file Excel</button>
+          <button class="btn ghost" id="bcMark">Đánh dấu đã báo IT</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-ql" hidden>
+    <div class="manage">
+      <div class="panel">
+        <h3>Thêm thẻ / cập nhật mã thẻ</h3>
+        <p>Nhập số thứ tự (STT) và mã thẻ. STT đã có thì app cập nhật mã cho thẻ đó, chưa có thì tạo thẻ mới.</p>
+        <div class="inline">
+          <input class="t" id="newCard" placeholder="STT" autocomplete="off" style="flex:0 1 90px">
+          <input class="t" id="newMa" placeholder="Mã thẻ" autocomplete="off">
+          <button class="btn primary" id="addCard">Lưu</button>
+        </div>
+        <div class="err" id="addErr"></div>
+      </div>
+      <div class="panel">
+        <h3>Nhập nhanh nhiều mã thẻ</h3>
+        <p>Dán một cột mã thẻ (mỗi dòng một mã): app gắn lần lượt vào các thẻ chưa có mã, theo STT 01, 02, 03… Hoặc mỗi dòng ghi “STT mã thẻ” để gắn đúng thẻ.</p>
+        <textarea class="t" id="bulkMa" rows="5" placeholder="416545641651&#10;416545641652&#10;416545641653" spellcheck="false" autocapitalize="off" style="font-family:var(--mono)"></textarea>
+        <div class="actions" style="margin-top:10px;justify-content:flex-start"><button class="btn primary" id="bulkOk">Cập nhật mã</button></div>
+        <div class="err" id="bulkErr"></div>
+      </div>
+      <div class="panel wide">
+        <h3>Danh sách thẻ và mã thẻ</h3>
+        <p>Gõ mã thẻ vào ô bên cạnh từng STT, mã được lưu ngay khi rời ô. Chỉ xoá được thẻ không đang cho mượn; lịch sử giao nhận cũ vẫn giữ.</p>
+        <div class="err" id="maErr" style="margin-bottom:8px"></div>
+        <div id="maList"></div>
+      </div>
+      <div class="panel">
+        <h3>Sao lưu dữ liệu</h3>
+        <p>Dữ liệu chỉ nằm trong iPad này. Nên lưu một bản sao (vào ứng dụng Tệp, AirDrop hoặc gửi qua Zalo/email) mỗi tuần, phòng khi máy hỏng hoặc bị xoá dữ liệu Safari.</p>
+        <div class="inline">
+          <button class="btn primary" id="bkOut">Lưu bản sao lưu</button>
+          <button class="btn ghost" id="bkIn">Khôi phục từ bản sao lưu</button>
+          <input type="file" id="bkFile" accept=".json,application/json" hidden>
+        </div>
+        <p style="margin:10px 0 0" id="bkInfo"></p>
+        <h3 style="margin-top:18px">Tự sao lưu hằng ngày</h3>
+        <p>App tự lưu một bản lúc 0:00 (nếu app đang mở) hoặc ngay lần mở đầu tiên trong ngày, giữ 5 bản gần nhất ngay trong iPad. Dùng để quay lại khi lỡ tay xoá/sửa nhầm. Các bản này sẽ mất nếu xoá app hay hỏng máy, nên thỉnh thoảng anh vẫn cần “Lưu bản sao lưu” ra ngoài.</p>
+        <div id="snapList"></div>
+      </div>
+      <div class="panel">
+        <h3>Xuất danh sách ra Excel</h3>
+        <p>Tạo file CSV mở được bằng Excel / Numbers: số thẻ, bệnh nhân, phòng, SĐT, giờ giao, giờ trả. (Không gồm hình chữ ký.)</p>
+        <button class="btn ghost" id="csvOut">Xuất file CSV</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div id="sheetRoot"></div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmt = iso => iso ? new Date(iso).toLocaleString("vi-VN",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit",year:"numeric"}) : "–";
+  const days = iso => Math.floor((Date.now() - new Date(iso)) / 86400000);
+  const slug = s => String(s).trim().replace(/[^A-Za-z0-9_\-.~:@+]/g, "_");
+  const LATE_DAYS = 7;
+  const lab = c => (c && c.ma) ? c.ma : ("số " + (c?.so ?? ""));
+  const codeHtml = ma => { ma = String(ma||""); const pre = ma.length>4 ? ma.slice(0,-4) : "", end = ma.length>4 ? ma.slice(-4) : ma;
+    return `<span class="code"><span class="pre">${esc(pre)||"&nbsp;"}</span><span class="end">${esc(end)}</span></span>`; };
+  const dstr = iso => new Date(iso).toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit",year:"numeric"});
+  const ttOf = c => c.tinhTrang || (/^mất/i.test(c.ghiChu||"") ? "mat" : "hong");
+  const ttName = c => ttOf(c)==="mat" ? "Mất" : "Hỏng";
+  let f3 = "chua", bcSel = new Set(), bcTouched = false;
+
+  let db = null;
+  let cards = [], loans = {};
+  let f1 = "all", f2 = "all";
+
+  
+  let toastT;
+  function toast(msg){
+    let t = $(".toast"); if(!t){ t = document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 2600);
+  }
+  function banner(msg){ const b=$("#banner"); b.textContent=msg; b.hidden=!msg; }
+
+  /* ---------- tabs & filters ---------- */
+  const views = {"tab-the":"#v-the","tab-ls":"#v-ls","tab-bc":"#v-bc","tab-ql":"#v-ql"};
+  Object.keys(views).forEach(id => $("#"+id).addEventListener("click", () => {
+    Object.keys(views).forEach(k => { $("#"+k).setAttribute("aria-selected", k===id); $(views[k]).hidden = k!==id; });
+  }));
+  function chipGroup(sel, set){ $(sel).addEventListener("click", e => { const b=e.target.closest(".chip"); if(!b) return;
+    $(sel).querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c===b)); set(b.dataset.f); render(); }); }
+  chipGroup("#f1", v=>f1=v); chipGroup("#f2", v=>f2=v); chipGroup("#f3", v=>{f3=v; bcTouched=false;});
+  $("#q1").addEventListener("input", render); $("#q2").addEventListener("input", render);
+
+  /* ---------- render ---------- */
+  const sortNum = (a,b) => a.so.localeCompare(b.so, "vi", {numeric:true});
+  function render(){
+    const kho = cards.filter(c=>c.trangThai==="kho").length, muon = cards.filter(c=>c.trangThai==="muon").length, hong = cards.filter(c=>c.trangThai==="hong").length;
+    $("#sKho").textContent = kho; $("#sMuon").textContent = muon; $("#sHong").textContent = hong;
+
+    // rack
+    const q = $("#q1").value.trim().toLowerCase();
+    const list = cards.filter(c => f1==="all" || c.trangThai===f1).filter(c => {
+      if(!q) return true; const l = loans[c.luotId];
+      return [c.so, c.ma, l?.ten, l?.phong, l?.sdt].some(v => String(v||"").toLowerCase().includes(q));
+    }).sort(sortNum);
+    const rack = $("#rack");
+    if(!cards.length){
+      rack.innerHTML = `<div class="empty" style="grid-column:1/-1"><h2>Chưa có thẻ nào</h2>Vào mục <b>Quản lý thẻ</b> để thêm số thẻ của anh. Thẻ sẽ hiện ở đây.</div>`;
+    } else if(!list.length){
+      rack.innerHTML = `<div class="empty" style="grid-column:1/-1">Không có thẻ nào khớp.</div>`;
+    } else {
+      rack.innerHTML = list.map(c => {
+        const l = c.trangThai==="muon" ? loans[c.luotId] : null;
+        let body = "";
+        if(c.trangThai==="kho") body = `<span class="state">Trong kho</span>`;
+        else if(c.trangThai==="hong") body = `<span class="state">${ttName(c)}${c.daBaoIT?`<span class="late soft">đã báo IT</span>`:""}</span><span class="sub">${c.ngayHong?dstr(c.ngayHong):esc(c.ghiChu||"")}</span>`;
+        else { const d = l ? days(l.giaoLuc) : 0;
+          body = `<span class="state">Đang mượn${d>=1?`<span class="late${d>=LATE_DAYS?"":" soft"}">${d} ngày</span>`:""}</span>
+                  <span class="who">${esc(l?.ten||"…")}</span>
+                  ${l?.phong?`<span class="sub">P. ${esc(l.phong)}</span>`:""}`; }
+        return `<button class="tag ${c.trangThai}" data-so="${esc(c.id)}" aria-label="Thẻ ${esc(lab(c))}">${c.ma?`<span class="stt">${esc(c.so)}</span>${codeHtml(c.ma)}`:`<span class="num">${esc(c.so)}</span><span class="nocode">chưa có mã</span>`}${body}</button>`;
+      }).join("");
+    }
+
+    // ledger
+    const q2 = $("#q2").value.trim().toLowerCase();
+    const ls = Object.values(loans).filter(l => f2==="all" || (f2==="dang" ? !l.traLuc : !!l.traLuc))
+      .filter(l => !q2 || [l.so,l.ma||cards.find(c=>c.so===l.so)?.ma,l.ten,l.phong,l.sdt].some(v=>String(v||"").toLowerCase().includes(q2)))
+      .sort((a,b)=> (b.giaoLuc||"").localeCompare(a.giaoLuc||""));
+    $("#ledger").innerHTML = ls.length ? ls.map(l => `
+      <button class="row" data-loan="${esc(l.id)}">
+        ${(()=>{ const m = l.ma || cards.find(c=>c.so===l.so)?.ma || ""; return m ? `<span class="num">${esc(m.slice(-4))}<small>${esc(m.length>4?"…"+m.slice(-8,-4):"")} · ${esc(l.so)}</small></span>` : `<span class="num">${esc(l.so)}<small>chưa có mã</small></span>`; })()}
+        <span class="main"><div class="name">${esc(l.ten)}</div>
+          <div class="meta">${l.phong?("P. "+esc(l.phong)+" · "):""}Giao ${fmt(l.giaoLuc)}${l.traLuc?(" · Trả "+fmt(l.traLuc)):""}</div></span>
+        <span class="pill ${l.traLuc?"tra":"dang"}">${l.traLuc?"Đã trả":"Chưa trả"}</span>
+      </button>`).join("") : `<div class="empty">Chưa có lượt giao nhận nào${q2||f2!=="all"?" khớp":""}.</div>`;
+
+    renderMa(); renderBc();
+  }
+
+  /* ---------- mã thẻ list ---------- */
+  const stName = c => c.trangThai==="kho" ? "Trong kho" : c.trangThai==="muon" ? "Đang mượn" : ttName(c);
+  function dupMa(){ const m={}; cards.forEach(c=>{ const k=(c.ma||"").trim().toLowerCase(); if(k) (m[k] ||= []).push(c.so); }); return Object.values(m).filter(a=>a.length>1); }
+  function renderMa(){
+    const host = $("#maList"); if(!host) return;
+    const act = document.activeElement; if(act && act.classList?.contains("ma-in") && host.contains(act)) return; // don't clobber typing
+    const dups = dupMa(), dupSet = new Set(dups.flat());
+    $("#maErr").textContent = dups.length ? "Trùng mã thẻ: " + dups.map(a=>"thẻ "+a.join(" & ")).join("; ") : "";
+    const noMa = cards.filter(c=>!(c.ma||"").trim()).length;
+    host.innerHTML = cards.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>STT</th><th>Mã thẻ</th><th>Tình trạng</th><th></th></tr></thead><tbody>${
+      cards.slice().sort(sortNum).map(c=>`<tr><td class="so">${esc(c.so)}</td>
+        <td><input class="ma-in${dupSet.has(c.so)?" dup":""}" data-ma="${esc(c.id)}" value="${esc(c.ma||"")}" placeholder="Chưa có mã" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Mã thẻ ${esc(c.so)}"></td>
+        <td><span class="st ${c.trangThai}">${stName(c)}</span></td>
+        <td style="text-align:right"><button class="del" data-del="${esc(c.id)}" ${c.trangThai==="muon"?"disabled title='Thẻ đang cho mượn'":""}>Xoá</button></td></tr>`).join("")
+      }</tbody></table></div>${noMa?`<p style="margin:10px 0 0">${noMa} thẻ chưa có mã.</p>`:""}` : `<span style="color:var(--muted)">Chưa có thẻ.</span>`;
+  }
+
+  /* ---------- báo IT ---------- */
+  function bcList(){ return cards.filter(c=>c.trangThai==="hong" && (f3==="all" || !c.daBaoIT)).sort(sortNum); }
+  function renderBc(){
+    const host = $("#bcBody"); if(!host) return;
+    const list = bcList();
+    if(!bcTouched) bcSel = new Set(list.filter(c=>!c.daBaoIT).map(c=>c.id));
+    bcSel = new Set([...bcSel].filter(id=>list.some(c=>c.id===id)));
+    host.innerHTML = list.length ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>STT</th><th>Mã thẻ</th><th>Tình trạng</th><th>Ngày ghi nhận</th><th>Ghi chú</th><th>Báo IT</th></tr></thead><tbody>${
+      list.map(c=>`<tr><td><input type="checkbox" data-pick="${esc(c.id)}" ${bcSel.has(c.id)?"checked":""} aria-label="Chọn thẻ ${esc(c.so)}"></td>
+        <td class="so">${esc(c.so)}</td><td class="ma">${c.ma?esc(c.ma):`<span style="color:var(--bad)">chưa có</span>`}</td>
+        <td><span class="st hong">${ttName(c)}</span></td>
+        <td>${c.ngayHong?dstr(c.ngayHong):"–"}</td>
+        <td style="min-width:160px">${esc(c.ghiChu||"")}</td>
+        <td>${c.daBaoIT?`<span class="st it">${dstr(c.daBaoIT)}</span>`:"Chưa"}</td></tr>`).join("")
+      }</tbody></table></div>` : `<div class="empty">${f3==="chua"?"Không có thẻ mất / hỏng nào cần báo IT.":"Hiện không có thẻ mất / hỏng."}</div>`;
+    const sel = list.filter(c=>bcSel.has(c.id)), miss = sel.filter(c=>!c.ma);
+    $("#bcWarn").textContent = miss.length ? `Thẻ ${miss.map(c=>c.so).join(", ")} chưa có mã. Nhập mã ở tab Quản lý thẻ trước khi gửi IT.` : "";
+    ["#bcSend","#bcCsv","#bcMark"].forEach(id=>$(id).disabled = !sel.length);
+  }
+
+  /* ---------- signature pad ---------- */
+  function makePad(host){
+    host.innerHTML = `<canvas></canvas><div class="base"></div><div class="hint">Ký tên bằng ngón tay vào đây</div>`;
+    const cv = host.querySelector("canvas"), ctx = cv.getContext("2d");
+    let strokes = [], cur = null;
+    function size(){ const r = host.getBoundingClientRect(), d = window.devicePixelRatio||1;
+      cv.width = r.width*d; cv.height = r.height*d; ctx.setTransform(d,0,0,d,0,0); redraw(); }
+    function redraw(){ ctx.clearRect(0,0,cv.width,cv.height); ctx.strokeStyle="#14213d"; ctx.lineCap="round"; ctx.lineJoin="round";
+      for(const s of strokes){ for(let i=1;i<s.length;i++){ const p=s[i-1],q=s[i]; ctx.lineWidth=Math.max(1.6, 3.4 - (q.v||0)*1.2);
+        ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(q.x,q.y); ctx.stroke(); }
+        if(s.length===1){ ctx.beginPath(); ctx.arc(s[0].x,s[0].y,1.6,0,7); ctx.fillStyle="#14213d"; ctx.fill(); } } }
+    const pt = e => { const r = cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top, t:e.timeStamp}; };
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); cv.setPointerCapture(e.pointerId); cur=[pt(e)]; strokes.push(cur); host.classList.add("signed"); redraw(); });
+    cv.addEventListener("pointermove", e => { if(!cur) return; e.preventDefault(); const p=pt(e), l=cur[cur.length-1];
+      const dist=Math.hypot(p.x-l.x,p.y-l.y); if(dist<1) return; p.v=Math.min(1.5, dist/Math.max(1,p.t-l.t)); cur.push(p); redraw(); });
+    const end = () => { cur=null; }; cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+    const ro = new ResizeObserver(size); ro.observe(host);
+    return {
+      isEmpty: () => strokes.length===0,
+      clear(){ strokes=[]; host.classList.remove("signed"); redraw(); },
+      toData(){ const r = host.getBoundingClientRect(), W=560, H=Math.round(W*r.height/r.width);
+        const o = document.createElement("canvas"); o.width=W; o.height=H; const c=o.getContext("2d"), k=W/r.width;
+        c.fillStyle="#fffef9"; c.fillRect(0,0,W,H); c.strokeStyle="#14213d"; c.lineCap="round"; c.lineJoin="round";
+        for(const s of strokes){ for(let i=1;i<s.length;i++){ c.lineWidth=Math.max(1.6,3.4-(s[i].v||0)*1.2)*k;
+          c.beginPath(); c.moveTo(s[i-1].x*k,s[i-1].y*k); c.lineTo(s[i].x*k,s[i].y*k); c.stroke(); } }
+        return o.toDataURL("image/png"); },
+      destroy(){ ro.disconnect(); }
+    };
+  }
+
+  /* ---------- sheets ---------- */
+  let pad = null;
+  function closeSheet(){ pad?.destroy(); pad=null; $("#sheetRoot").innerHTML=""; }
+  function openSheet(html){
+    $("#sheetRoot").innerHTML = `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+    const scrim = $("#sheetRoot .scrim");
+    scrim.addEventListener("click", e => { if(e.target===scrim) closeSheet(); });
+    scrim.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", closeSheet));
+    return scrim;
+  }
+  document.addEventListener("keydown", e => { if(e.key==="Escape") closeSheet(); });
+  const head = (so, title) => { const cc = cards.find(x=>x.so===so); return `<div class="sheet-head"><span class="bigtag">${cc?.ma ? `${esc(cc.ma)}<small>Mã thẻ · STT ${esc(so)}</small>` : `${esc(so)}${cc?"<small>Chưa có mã thẻ</small>":""}`}</span><h2>${title}</h2><button class="x" data-close aria-label="Đóng">×</button></div>`; };
+  const sigBlock = label => `<div class="sigbox"><div class="sighead"><span>${label}</span><button type="button" data-clear>Ký lại</button></div><div class="pad" id="pad"></div></div>`;
+
+  function giaoSheet(c){
+    const s = openSheet(`${head(c.so,"Giao thẻ cho bệnh nhân")}
+      <div class="grid2">
+        <label class="f">Họ tên bệnh nhân *<input class="t" id="g-ten" autocomplete="off"></label>
+        <label class="f">Phòng / giường<input class="t" id="g-phong" autocomplete="off" placeholder="VD: 305 – G2"></label>
+        <label class="f">Số điện thoại<input class="t" id="g-sdt" inputmode="tel" autocomplete="off"></label>
+        <label class="f">Người nhận thay (nếu có)<input class="t" id="g-nguoi" autocomplete="off" placeholder="VD: con trai – Nguyễn Văn B"></label>
+      </div>
+      <label class="f">Ghi chú<textarea class="t" id="g-note" rows="2"></textarea></label>
+      ${sigBlock("Chữ ký người nhận thẻ *")}
+      <div class="err" id="g-err"></div>
+      <div class="actions"><button class="btn ghost" data-close>Huỷ</button><button class="btn primary" id="g-ok">Xác nhận giao thẻ</button></div>`);
+    pad = makePad($("#pad")); s.querySelector("[data-clear]").onclick = () => pad.clear();
+    setTimeout(()=>$("#g-ten")?.focus(), 50);
+    $("#g-ok").onclick = async () => {
+      const ten = $("#g-ten").value.trim();
+      if(!ten) return $("#g-err").textContent = "Cần nhập họ tên bệnh nhân.";
+      if(pad.isEmpty()) return $("#g-err").textContent = "Cần chữ ký của người nhận thẻ.";
+      $("#g-ok").disabled = true; $("#g-err").textContent = "";
+      const id = "L" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+      const rec = {so:c.so, ma:c.ma||"", theId:c.id, ten, phong:$("#g-phong").value.trim(), sdt:$("#g-sdt").value.trim(),
+        nguoiNhan:$("#g-nguoi").value.trim(), ghiChu:$("#g-note").value.trim(), giaoLuc:new Date().toISOString(), kyGiao:pad.toData(), traLuc:null};
+      try {
+        await db.doc("luot/"+id).set(rec);
+        await db.doc("the/"+c.id).update({trangThai:"muon", luotId:id});
+        closeSheet(); toast(`Đã giao thẻ ${lab(c)} cho ${ten}`);
+      } catch(e){ $("#g-ok").disabled=false; $("#g-err").textContent = errMsg(e); }
+    };
+  }
+
+  function muonSheet(c){
+    const l = loans[c.luotId] || {};
+    const s = openSheet(`${head(c.so,"Nhận lại thẻ")}
+      <dl class="facts">
+        <dt>Bệnh nhân</dt><dd>${esc(l.ten)}</dd>
+        ${l.phong?`<dt>Phòng</dt><dd>${esc(l.phong)}</dd>`:""}
+        ${l.sdt?`<dt>Điện thoại</dt><dd>${esc(l.sdt)}</dd>`:""}
+        ${l.nguoiNhan?`<dt>Người nhận thay</dt><dd>${esc(l.nguoiNhan)}</dd>`:""}
+        <dt>Giao lúc</dt><dd>${fmt(l.giaoLuc)} (${days(l.giaoLuc)} ngày)</dd>
+        ${l.ghiChu?`<dt>Ghi chú</dt><dd>${esc(l.ghiChu)}</dd>`:""}
+      </dl>
+      ${l.kyGiao?`<div class="sigbox"><div class="sighead"><span>Chữ ký khi nhận thẻ</span></div><img class="sigimg" src="${l.kyGiao}" alt="Chữ ký khi nhận thẻ"></div>`:""}
+      ${sigBlock("Chữ ký khi trả thẻ (không bắt buộc)")}
+      <div class="err" id="r-err"></div>
+      <div class="actions">
+        <button class="btn danger" id="r-lost">Báo mất thẻ</button>
+        <button class="btn primary" id="r-ok">Xác nhận đã nhận lại</button>
+      </div>`);
+    pad = makePad($("#pad")); s.querySelector("[data-clear]").onclick = () => pad.clear();
+    $("#r-ok").onclick = async () => {
+      $("#r-ok").disabled = true;
+      try {
+        await db.doc("luot/"+c.luotId).update({traLuc:new Date().toISOString(), kyTra: pad.isEmpty()?null:pad.toData()});
+        await db.doc("the/"+c.id).update({trangThai:"kho", luotId:null});
+        closeSheet(); toast(`Đã nhận lại thẻ ${lab(c)}`);
+      } catch(e){ $("#r-ok").disabled=false; $("#r-err").textContent = errMsg(e); }
+    };
+    $("#r-lost").onclick = () => confirmLost(c, l);
+  }
+
+  function confirmLost(c, l){
+    openSheet(`${head(c.so,"Báo mất thẻ?")}
+      <p style="margin:0">Thẻ sẽ chuyển sang <b>Mất</b> và vào danh sách báo IT khoá mã, lượt mượn của ${esc(l.ten||"bệnh nhân")} được đóng lại với ghi chú “Mất thẻ”.</p>
+      <div class="err" id="m-err"></div>
+      <div class="actions"><button class="btn ghost" data-close>Không</button><button class="btn warn" id="m-ok">Đúng, báo mất</button></div>`);
+    $("#m-ok").onclick = async () => {
+      try {
+        await db.doc("luot/"+c.luotId).update({traLuc:new Date().toISOString(), matThe:true, ghiChu:((l.ghiChu?l.ghiChu+" · ":"")+"Mất thẻ")});
+        await db.doc("the/"+c.id).update({trangThai:"hong", tinhTrang:"mat", ngayHong:new Date().toISOString(), daBaoIT:null, luotId:null, ghiChu:"Mất khi giao cho "+(l.ten||"")+(l.phong?" (P. "+l.phong+")":"")});
+        closeSheet(); toast(`Đã ghi nhận mất thẻ ${lab(c)}`);
+      } catch(e){ $("#m-err").textContent = errMsg(e); }
+    };
+  }
+
+  function hongSheet(c){
+    openSheet(`${head(c.so,"Thẻ "+ttName(c).toLowerCase())}
+      <dl class="facts">
+        <dt>Mã thẻ</dt><dd>${c.ma?esc(c.ma):"Chưa có"}</dd>
+        <dt>Ghi nhận</dt><dd>${c.ngayHong?fmt(c.ngayHong):"–"}</dd>
+        ${c.ghiChu?`<dt>Ghi chú</dt><dd>${esc(c.ghiChu)}</dd>`:""}
+        <dt>Báo IT</dt><dd>${c.daBaoIT?"Đã báo ngày "+dstr(c.daBaoIT):"Chưa báo"}</dd>
+      </dl>
+      <p style="margin:0">Nếu đã tìm lại được thẻ hoặc đã có thẻ thay thế, đưa thẻ trở lại kho.${c.daBaoIT?" <b>Mã cũ đã báo IT khoá: nhớ nhờ IT mở lại hoặc cập nhật mã mới.</b>":""}</p>
+      <label class="f">Thay bằng thẻ mới: nhập mã thẻ mới (giữ STT ${esc(c.so)})<input class="t" id="h-ma" autocomplete="off" spellcheck="false" placeholder="Mã thẻ mới" style="font-family:var(--mono)"></label>
+      <div class="err" id="h-err"></div>
+      <div class="actions"><button class="btn ghost" data-close>Đóng</button><button class="btn ghost" id="h-ok">Tìm lại được, đưa về kho</button><button class="btn primary" id="h-new">Thay thẻ mới</button></div>`);
+    $("#h-new").onclick = async () => {
+      const ma = $("#h-ma").value.trim();
+      if(!ma) return $("#h-err").textContent = "Nhập mã của thẻ mới trước đã.";
+      if(ma.toLowerCase()===(c.ma||"").toLowerCase()) return $("#h-err").textContent = "Mã này trùng mã thẻ cũ.";
+      const other = cards.find(x=>x!==c && (x.ma||"").toLowerCase()===ma.toLowerCase());
+      if(other) return $("#h-err").textContent = `Mã này đang gắn với thẻ STT ${other.so}.`;
+      if(!c.daBaoIT && c.ma) return $("#h-err").innerHTML = `Thẻ cũ (mã ${esc(c.ma)}) <b>chưa báo IT khoá</b>. Vào tab “Báo IT khoá thẻ” gửi IT và đánh dấu đã báo trước, rồi mới thay thẻ mới.`;
+      try {
+        const old = {ma:c.ma||"", tinhTrang:ttOf(c), ngayHong:c.ngayHong||null, daBaoIT:c.daBaoIT||null, ghiChu:c.ghiChu||"", thayLuc:new Date().toISOString()};
+        await db.doc("the/"+c.id).update({ma, trangThai:"kho", tinhTrang:null, ngayHong:null, daBaoIT:null, ghiChu:"", theCu:[...(c.theCu||[]), old]});
+        closeSheet(); toast(`STT ${c.so}: đã thay thẻ mới, mã ${ma}`);
+      } catch(e){ $("#h-err").textContent = errMsg(e); }
+    };
+    $("#h-ok").onclick = async () => { try { await db.doc("the/"+c.id).update({trangThai:"kho", ghiChu:"", tinhTrang:null, ngayHong:null, daBaoIT:null}); closeSheet(); toast(`Thẻ ${lab(c)} đã về kho`); } catch(e){ $("#h-err").textContent = errMsg(e); } };
+  }
+
+  function khoExtra(c){ giaoSheet(c);
+    const a = $("#sheetRoot .actions"); const b = document.createElement("button"); b.className="btn danger"; b.textContent="Báo mất / hỏng"; b.style.marginRight="auto";
+    b.onclick = () => { closeSheet(); matHongSheet(c); };
+    a.prepend(b);
+  }
+  function matHongSheet(c){
+    let kind = "hong";
+    openSheet(`${head(c.so,"Báo thẻ mất / hỏng")}
+      <div class="choice" id="mh-k"><button data-k="mat" aria-pressed="false">Mất thẻ</button><button data-k="hong" aria-pressed="true">Thẻ hỏng</button></div>
+      <label class="f">Ghi chú<textarea class="t" id="mh-note" rows="2" placeholder="VD: thẻ gãy, không quẹt được"></textarea></label>
+      <p style="margin:0;color:var(--muted)">Thẻ sẽ vào danh sách “Báo IT khoá thẻ”.${c.ma?"":" Thẻ này chưa có mã, nhớ nhập mã ở tab Quản lý thẻ."}</p>
+      <div class="err" id="mh-err"></div>
+      <div class="actions"><button class="btn ghost" data-close>Huỷ</button><button class="btn warn" id="mh-ok">Xác nhận</button></div>`);
+    $("#mh-k").onclick = e => { const b=e.target.closest("[data-k]"); if(!b) return; kind=b.dataset.k; $("#mh-k").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b)); };
+    $("#mh-ok").onclick = async () => { try {
+      await db.doc("the/"+c.id).update({trangThai:"hong", tinhTrang:kind, ngayHong:new Date().toISOString(), daBaoIT:null, ghiChu:$("#mh-note").value.trim()});
+      closeSheet(); toast(`Thẻ ${lab(c)}: đã ghi nhận ${kind==="mat"?"mất":"hỏng"}`); } catch(e){ $("#mh-err").textContent = errMsg(e); } };
+  }
+
+  function loanSheet(l){
+    openSheet(`${head(l.so, esc(l.ten))}
+      <dl class="facts">
+        ${l.phong?`<dt>Phòng</dt><dd>${esc(l.phong)}</dd>`:""}
+        ${l.sdt?`<dt>Điện thoại</dt><dd>${esc(l.sdt)}</dd>`:""}
+        ${l.nguoiNhan?`<dt>Người nhận thay</dt><dd>${esc(l.nguoiNhan)}</dd>`:""}
+        <dt>Giao lúc</dt><dd>${fmt(l.giaoLuc)}</dd>
+        <dt>Trả lúc</dt><dd>${l.traLuc?fmt(l.traLuc):"Chưa trả"}</dd>
+        ${l.ghiChu?`<dt>Ghi chú</dt><dd>${esc(l.ghiChu)}</dd>`:""}
+      </dl>
+      ${l.kyGiao?`<div class="sigbox"><div class="sighead"><span>Chữ ký khi nhận thẻ</span></div><img class="sigimg" src="${l.kyGiao}" alt="Chữ ký khi nhận thẻ"></div>`:""}
+      ${l.kyTra?`<div class="sigbox"><div class="sighead"><span>Chữ ký khi trả thẻ</span></div><img class="sigimg" src="${l.kyTra}" alt="Chữ ký khi trả thẻ"></div>`:""}
+      <div class="actions"><button class="btn ghost" data-close>Đóng</button></div>`);
+  }
+
+  $("#rack").addEventListener("click", e => { const b=e.target.closest(".tag"); if(!b) return; if(!db) return toast("Đang mở dữ liệu…");
+    const c = cards.find(x=>x.id===b.dataset.so); if(!c) return;
+        if(c.trangThai==="kho") khoExtra(c); else if(c.trangThai==="muon") muonSheet(c); else hongSheet(c); });
+  $("#ledger").addEventListener("click", e => { const b=e.target.closest(".row"); if(b && loans[b.dataset.loan]) loanSheet(loans[b.dataset.loan]); });
+
+  /* ---------- manage ---------- */
+  // find card by number: exact, else same numeric value ("1" ↔ "01")
+  function findCard(so){ so=String(so).trim(); return cards.find(c=>c.so===so) || (/^\d+$/.test(so) ? cards.find(c=>/^\d+$/.test(c.so) && +c.so===+so) : null); }
+  async function upsert(so, ma){
+    const c = findCard(so);
+    if(c){ if(!ma || (c.ma||"")===ma) return {kind:"same", so:c.so};
+      await db.doc("the/"+c.id).update({ma}); return {kind: c.ma ? "changed" : "set", so:c.so, old:c.ma}; }
+    await db.doc("the/"+slug(so)).set({so, ma:ma||"", trangThai:"kho", luotId:null, ghiChu:""});
+    return {kind:"new", so};
+  }
+  $("#addCard").onclick = async () => {
+    const so = $("#newCard").value.trim(), ma = $("#newMa").value.trim();
+    $("#addErr").textContent = "";
+    if(!so) return $("#addErr").textContent = "Nhập STT trước đã.";
+    if(!db) return $("#addErr").textContent = "Dữ liệu chưa sẵn sàng.";
+    const other = ma && cards.find(c=>(c.ma||"").toLowerCase()===ma.toLowerCase() && c!==findCard(so));
+    if(other) return $("#addErr").textContent = `Mã này đang gắn với thẻ ${other.so}. Kiểm tra lại.`;
+    try { const r = await upsert(so, ma);
+      $("#newCard").value = ""; $("#newMa").value = ""; $("#newCard").focus();
+      toast(r.kind==="new" ? `Đã thêm thẻ ${r.so}` : r.kind==="same" ? `Thẻ ${r.so} không có gì thay đổi` : r.kind==="changed" ? `Đã đổi mã thẻ ${r.so}: ${r.old} → ${ma}` : `Đã lưu mã cho thẻ ${r.so}`);
+    } catch(e){ $("#addErr").textContent = errMsg(e); }
+  };
+  $("#bulkOk").onclick = async () => {
+    $("#bulkErr").textContent = ""; if(!db) return;
+    const lines = $("#bulkMa").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(!lines.length) return $("#bulkErr").textContent = "Dán danh sách vào ô trên trước đã.";
+    const bad = [], parsed = [], solo = [];
+    for(const l0 of lines){ const l = l0.replace(/^(số\s*thẻ|thẻ\s*số|thẻ|the|số|so)\s*[:.]?\s*/i,""); if(/^\S+$/.test(l)){ solo.push(l); continue; } const m = l.match(/^(\S+?)[\s\t,;:|\-–]+(.+)$/); if(!m){ bad.push(l0); continue; }
+      const so = m[1].replace(/^(thẻ|the|số|so)\.?/i,"").trim(), ma = m[2].replace(/\s+/g,"").trim(); if(!so||!ma){ bad.push(l0); continue; } parsed.push([so,ma]); }
+    if(solo.length){
+      const taken = new Set(parsed.map(([so])=>findCard(so)?.id).filter(Boolean));
+      const free = cards.filter(c=>!(c.ma||"").trim() && !taken.has(c.id)).sort(sortNum);
+      solo.forEach((ma,i)=>{ if(free[i]) parsed.push([free[i].so, ma]); else bad.push(ma); });
+      if(solo.length > free.length) $("#bulkErr").textContent = `Còn ${solo.length-free.length} mã thừa vì đã hết thẻ trống mã. Thêm thẻ mới rồi dán lại các mã đó.`;
+    }
+    const seen = {}; parsed.forEach(([so,ma])=>{ const k=ma.toLowerCase(); (seen[k] ||= []).push(so); });
+    cards.forEach(c=>{ const k=(c.ma||"").toLowerCase(); if(k && seen[k] && !seen[k].some(so=>findCard(so)===c)) seen[k].push(c.so+" (đang có)"); });
+    const dupIn = Object.values(seen).filter(a=>a.length>1);
+    if(dupIn.length) return $("#bulkErr").textContent = "Danh sách có mã bị trùng: " + dupIn.map(a=>"thẻ "+a.join(" & ")).join("; ");
+    let nNew=0, nSet=0, nChg=0;
+    try { for(const [so,ma] of parsed){ const r = await upsert(so, ma); if(r.kind==="new") nNew++; else if(r.kind==="set") nSet++; else if(r.kind==="changed") nChg++; } }
+    catch(e){ return $("#bulkErr").textContent = errMsg(e); }
+    $("#bulkMa").value = bad.join("\n");
+    const parts = []; if(nSet) parts.push(`${nSet} thẻ được gắn mã`); if(nChg) parts.push(`${nChg} thẻ đổi mã`); if(nNew) parts.push(`${nNew} thẻ mới`);
+    toast(parts.length ? "Đã cập nhật: " + parts.join(", ") : "Không có gì thay đổi");
+    if(bad.length && !$("#bulkErr").textContent) $("#bulkErr").textContent = `${bad.length} dòng không đọc được (còn lại trong ô để anh sửa). Mỗi dòng cần: số thẻ, khoảng trắng, mã thẻ.`;
+    render();
+  };
+  $("#newCard").addEventListener("keydown", e => { if(e.key==="Enter") $("#newMa").focus(); });
+  $("#newMa").addEventListener("keydown", e => { if(e.key==="Enter") $("#addCard").click(); });
+  $("#maList").addEventListener("change", async e => { const i=e.target.closest(".ma-in"); if(!i) return;
+    const c = cards.find(x=>x.id===i.dataset.ma); const v = i.value.trim(); if(!c || (c.ma||"")===v) return;
+    try { await db.doc("the/"+c.id).update({ma:v}); toast(v?`Đã lưu mã thẻ ${lab(c)}`:`Đã xoá mã thẻ ${lab(c)}`); } catch(err){ toast(errMsg(err)); }
+    setTimeout(render, 0); });
+  $("#maList").addEventListener("keydown", e => { if(e.key==="Enter" && e.target.classList.contains("ma-in")){ e.preventDefault();
+    const all=[...document.querySelectorAll(".ma-in")]; const n=all[all.indexOf(e.target)+1]; n ? n.focus() : e.target.blur(); } });
+  $("#maList").addEventListener("focusout", () => setTimeout(()=>{ if(!document.activeElement?.classList?.contains("ma-in")) render(); }, 0));
+
+  /* báo IT actions */
+  $("#bcBody").addEventListener("change", e => { const cb=e.target.closest("[data-pick]"); if(!cb) return; bcTouched=true;
+    cb.checked ? bcSel.add(cb.dataset.pick) : bcSel.delete(cb.dataset.pick); renderBc(); });
+  const bcPicked = () => bcList().filter(c=>bcSel.has(c.id));
+  const today = () => dstr(new Date());
+  function bcText(list){
+    return `KHOA NGOẠI TỔNG HỢP - ĐỀ NGHỊ KHOÁ MÃ THẺ THANG MÁY\nNgày ${today()}\n\n` +
+      list.map((c,i)=>`${i+1}. Mã thẻ: ${c.ma||"(chưa có mã)"} - ${ttName(c)}${c.ngayHong?" ngày "+dstr(c.ngayHong):""} (STT ${c.so})`).join("\n") +
+      `\n\nTổng cộng: ${list.length} thẻ. Nhờ IT khoá giúp các mã thẻ trên. Cảm ơn!`;
+  }
+  $("#bcSend").onclick = async () => {
+    const text = bcText(bcPicked());
+    try { if(navigator.share){ await navigator.share({text}); return; } } catch(e){ if(e?.name==="AbortError") return; }
+    try { await navigator.clipboard.writeText(text); toast("Đã sao chép. Dán vào Zalo hoặc email để gửi IT."); return; } catch {}
+    openSheet(`${head("IT","Nội dung gửi IT")}<p style="margin:0">Chọn hết đoạn dưới đây rồi sao chép.</p>
+      <textarea class="t" rows="10" readonly id="bc-txt">${esc(text)}</textarea>
+      <div class="actions"><button class="btn ghost" data-close>Đóng</button></div>`);
+    $("#bc-txt").focus(); $("#bc-txt").select();
+  };
+  $("#bcCsv").onclick = async () => {
+    const q = v => `"${String(v??"").replace(/"/g,'""')}"`, list = bcPicked();
+    const rows = [["KHOA NGOẠI TỔNG HỢP - DANH SÁCH THẺ THANG MÁY CẦN KHOÁ MÃ"],["Ngày lập: "+today()],[],
+      ["#","Mã thẻ","STT thẻ","Tình trạng","Ngày ghi nhận","Ghi chú"]];
+    const tx = v => v ? `="${String(v).replace(/"/g,"")}"` : "";
+    list.forEach((c,i)=>rows.push([i+1, tx(c.ma), tx(c.so), ttName(c), tx(c.ngayHong?dstr(c.ngayHong):""), c.ghiChu||""]));
+    rows.push([],["Tổng cộng: "+list.length+" thẻ"]);
+    const line = r => r.map(v => typeof v==="string" && v.startsWith('="') ? v : q(v)).join(",");
+    await giveFile(`bao-IT-khoa-the_${stamp()}.csv`, "\uFEFF" + rows.map(line).join("\r\n"), "text/csv");
+  };
+  $("#bcMark").onclick = () => {
+    const list = bcPicked();
+    openSheet(`${head("IT","Đánh dấu đã báo IT?")}<p style="margin:0">${list.length} thẻ (${list.map(c=>esc(c.so)).join(", ")}) sẽ ghi là đã báo IT ngày ${today()} và ẩn khỏi mục “Chưa báo IT”.</p>
+      <div class="actions"><button class="btn ghost" data-close>Huỷ</button><button class="btn primary" id="bm-ok">Đánh dấu</button></div>`);
+    $("#bm-ok").onclick = async () => { const now = new Date().toISOString();
+      try { for(const c of list) await db.doc("the/"+c.id).update({daBaoIT:now}); bcTouched=false; closeSheet(); toast(`Đã đánh dấu ${list.length} thẻ đã báo IT`); } catch(e){ toast(errMsg(e)); } };
+  };
+  $("#maList").addEventListener("click", e => { const b=e.target.closest("[data-del]"); if(!b||b.disabled) return;
+    const c = cards.find(x=>x.id===b.dataset.del);
+    const unreported = c.trangThai==="hong" && !c.daBaoIT;
+    openSheet(`${head(c.so,"Xoá thẻ này?")}<p style="margin:0">Thẻ STT ${esc(c.so)}${c.ma?` (mã ${esc(c.ma)})`:""} sẽ biến khỏi danh sách. Lịch sử giao nhận cũ vẫn giữ nguyên.</p>
+      ${unreported?`<p style="margin:0;color:var(--bad);font-weight:600">Thẻ này đang ${ttName(c).toLowerCase()} và CHƯA báo IT khoá mã. Xoá rồi sẽ không còn trong danh sách báo IT. Nên báo IT trước, hoặc dùng “Thay thẻ mới” khi chạm vào thẻ.</p>`:""}
+      <div class="actions"><button class="btn ghost" data-close>Không</button><button class="btn warn" id="d-ok">Xoá thẻ</button></div>`);
+    $("#d-ok").onclick = async () => { try { await db.doc("the/"+c.id).delete(); closeSheet(); toast(`Đã xoá thẻ ${lab(c)}`); } catch(e){ toast(errMsg(e)); } };
+  });
+
+  function errMsg(e){
+    if(e && (e.name==="QuotaExceededError" || /quota/i.test(e.message||""))) return "Bộ nhớ iPad đã đầy. Hãy xoá bớt ảnh/video hoặc lưu bản sao lưu rồi dọn lịch sử cũ.";
+    return "Không lưu được vào iPad. Thử tải lại app.";
+  }
+
+  /* ---------- on-device store (IndexedDB) ---------- */
+  function openIDB(){
+    return new Promise((res, rej) => {
+      const r = indexedDB.open("the-thang-may", 2);
+      r.onupgradeneeded = () => { const d = r.result;
+        if(!d.objectStoreNames.contains("docs")) d.createObjectStore("docs");
+        if(!d.objectStoreNames.contains("snaps")) d.createObjectStore("snaps"); };
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+  }
+  async function makeLocalDb(){
+    const idb = await openIDB();
+    const mem = new Map();               // "coll/id" -> data
+    await new Promise((res, rej) => {
+      const tx = idb.transaction("docs"), st = tx.objectStore("docs"), req = st.openCursor();
+      req.onsuccess = () => { const c = req.result; if(c){ mem.set(c.key, c.value); c.continue(); } else res(); };
+      req.onerror = () => rej(req.error);
+    });
+    const subs = {};                     // coll -> [fn]
+    const snap = coll => ({ docs: [...mem].filter(([k]) => k.split("/")[0]===coll)
+      .map(([k,v]) => ({ id: k.split("/")[1], exists:true, data: () => v })) });
+    const notify = coll => (subs[coll]||[]).forEach(fn => fn(snap(coll)));
+    const put = (key, val) => new Promise((res, rej) => {
+      const tx = idb.transaction("docs","readwrite"), st = tx.objectStore("docs");
+      val===undefined ? st.delete(key) : st.put(val, key);
+      tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+    });
+    const api = {
+      doc(path){ const coll = path.split("/")[0]; return {
+        async set(d){ const v = JSON.parse(JSON.stringify(d)); await put(path, v); mem.set(path, v); notify(coll); },
+        async update(d){ const cur = mem.get(path); if(!cur) throw new Error("missing"); const v = {...cur, ...JSON.parse(JSON.stringify(d))}; await put(path, v); mem.set(path, v); notify(coll); },
+        async delete(){ await put(path, undefined); mem.delete(path); notify(coll); }
+      }; },
+      collection(coll){ return { onSnapshot(fn){ (subs[coll] ||= []).push(fn); fn(snap(coll)); return () => {}; } }; },
+      dump(){ return Object.fromEntries(mem); },
+      async replaceAll(obj){
+        await new Promise((res, rej) => { const tx = idb.transaction("docs","readwrite"), st = tx.objectStore("docs");
+          st.clear(); for(const [k,v] of Object.entries(obj)) st.put(v, k);
+          tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); });
+        mem.clear(); for(const [k,v] of Object.entries(obj)) mem.set(k, v);
+        Object.keys(subs).forEach(notify);
+      },
+      size(){ return mem.size; },
+      // daily auto-backups kept inside the iPad (separate store, untouched by restore)
+      snapReq(mode, fn){ return new Promise((res, rej) => { const tx = idb.transaction("snaps", mode), st = tx.objectStore("snaps"); let out;
+        const r = fn(st); if(r) r.onsuccess = () => { out = r.result; }; tx.oncomplete = () => res(out); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); }); },
+      async snapKeys(){ return ((await this.snapReq("readonly", st => st.getAllKeys())) || []).sort(); },
+      snapGet(k){ return this.snapReq("readonly", st => st.get(k)); },
+      snapPut(k, v){ return this.snapReq("readwrite", st => { st.put(v, k); }); },
+      snapDel(k){ return this.snapReq("readwrite", st => { st.delete(k); }); }
+    };
+    return api;
+  }
+
+  /* ---------- backup / export ---------- */
+  async function giveFile(name, text, type){
+    const blob = new Blob([text], {type});
+    try { const dl = await window.claude?.use?.("downloads"); if(dl){ await dl.save({filename:name, data:blob}); return true; } } catch(e){ return false; }
+    try {
+      const file = new File([blob], name, {type});
+      if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:name}); return true; }
+    } catch(e){ if(e && e.name==="AbortError") return false; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 4000); return true;
+  }
+  const stamp = () => { const d=new Date(), z=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`; };
+  /* ---------- daily auto-backup ---------- */
+  const KEEP = 5;
+  const dayKey = d => { const z=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; };
+  async function autoSnap(force){
+    try {
+      const key = dayKey(new Date()), keys = await db.snapKeys();
+      if(!force && keys.includes(key)) return;
+      const docs = db.dump();
+      if(!Object.keys(docs).some(k=>k.startsWith("luot/")) && !Object.values(docs).some(v=>v && v.ma)) { renderSnaps(); return; } // nothing worth saving yet
+      await db.snapPut(key, {luc:new Date().toISOString(), docs});
+      const all = (await db.snapKeys()); for(const k of all.slice(0, Math.max(0, all.length-KEEP))) await db.snapDel(k);
+    } catch(e){ /* storage full or unavailable: skip silently, manual backup still works */ }
+    renderSnaps();
+  }
+  function scheduleMidnight(){
+    const now = new Date(), next = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0, 0, 5);
+    setTimeout(async () => { await autoSnap(); scheduleMidnight(); }, next - now);
+  }
+  document.addEventListener("visibilitychange", () => { if(document.visibilityState==="visible" && db) autoSnap(); });
+  async function renderSnaps(){
+    const host = $("#snapList"); if(!host || !db) return;
+    let keys = []; try { keys = (await db.snapKeys()).reverse(); } catch {}
+    if(!keys.length){ host.innerHTML = `<p style="margin:0;color:var(--muted)">Chưa có bản tự sao lưu nào. Bản đầu tiên sẽ được tạo khi đã có dữ liệu (mã thẻ hoặc lượt giao).</p>`; return; }
+    const rows = [];
+    for(const k of keys){ let v; try { v = await db.snapGet(k); } catch {} if(!v) continue;
+      const n = Object.keys(v.docs||{}).filter(x=>x.startsWith("luot/")).length;
+      const nMa = Object.entries(v.docs||{}).filter(([x,d])=>x.startsWith("the/") && d && d.ma).length;
+      rows.push(`<tr><td>${fmt(v.luc)}${k.includes("truoc-khoi-phuc")?`<br><small style="color:var(--muted)">trước khi khôi phục</small>`:""}</td><td>${nMa} thẻ có mã · ${n} lượt giao nhận</td><td style="text-align:right;white-space:nowrap"><button class="del" style="color:var(--accent)" data-snap-out="${k}">Lưu ra file</button><button class="del" data-snap-in="${k}">Khôi phục</button></td></tr>`); }
+    host.innerHTML = `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thời điểm</th><th>Nội dung</th><th></th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+  }
+  $("#snapList").addEventListener("click", async e => {
+    const out = e.target.closest("[data-snap-out]"), inn = e.target.closest("[data-snap-in]"); if(!out && !inn) return;
+    const k = (out||inn).dataset[out ? "snapOut" : "snapIn"]; const v = await db.snapGet(k); if(!v) return toast("Không tìm thấy bản sao lưu này.");
+    if(out){ await giveFile(`the-thang-may_saoluu_${k}.json`, JSON.stringify({app:"the-thang-may", v:1, luc:v.luc, docs:v.docs}), "application/json"); return; }
+    openSheet(`${head("↺","Khôi phục bản tự sao lưu?")}
+      <p style="margin:0">Quay về dữ liệu lúc <b>${fmt(v.luc)}</b>.</p>
+      <p style="margin:0;color:var(--bad)">Mọi thay đổi sau thời điểm đó sẽ mất. App sẽ tự lưu dữ liệu hiện tại thành một bản trước khi khôi phục, phòng khi anh muốn quay lại.</p>
+      <div class="actions"><button class="btn ghost" data-close>Huỷ</button><button class="btn warn" id="sn-ok">Khôi phục</button></div>`);
+    $("#sn-ok").onclick = async () => { try {
+      const z=n=>String(n).padStart(2,"0"), d=new Date();
+      await db.snapPut(`${dayKey(d)}_${z(d.getHours())}${z(d.getMinutes())}_truoc-khoi-phuc`, {luc:d.toISOString(), docs:db.dump()});
+      const all = await db.snapKeys(); for(const x of all.slice(0, Math.max(0, all.length-KEEP))) await db.snapDel(x);
+      await db.replaceAll(v.docs); closeSheet(); toast("Đã khôi phục dữ liệu"); renderSnaps(); } catch(err){ toast(errMsg(err)); } };
+  });
+
+  function setBkInfo(){ try { const t = localStorage.getItem("lastBackup"); $("#bkInfo").textContent = t ? "Lần sao lưu gần nhất: " + fmt(t) : "Chưa sao lưu lần nào."; } catch { $("#bkInfo").textContent=""; } }
+
+  $("#bkOut").onclick = async () => {
+    if(!db) return;
+    const ok = await giveFile(`the-thang-may_saoluu_${stamp()}.json`, JSON.stringify({app:"the-thang-may", v:1, luc:new Date().toISOString(), docs:db.dump()}), "application/json");
+    if(ok){ try { localStorage.setItem("lastBackup", new Date().toISOString()); } catch {} setBkInfo(); toast("Đã tạo bản sao lưu"); }
+  };
+  $("#bkIn").onclick = () => $("#bkFile").click();
+  $("#bkFile").onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ""; if(!f) return;
+    let data; try { data = JSON.parse(await f.text()); } catch { return toast("File này không phải bản sao lưu hợp lệ."); }
+    if(data?.app!=="the-thang-may" || typeof data.docs!=="object") return toast("File này không phải bản sao lưu của app.");
+    const n = Object.keys(data.docs).filter(k=>k.startsWith("luot/")).length;
+    openSheet(`${head("↺","Khôi phục bản sao lưu?")}
+      <p style="margin:0">Bản sao lưu lúc <b>${fmt(data.luc)}</b>, gồm ${Object.keys(data.docs).filter(k=>k.startsWith("the/")).length} thẻ và ${n} lượt giao nhận.</p>
+      <p style="margin:0;color:var(--bad)">Toàn bộ dữ liệu hiện có trên iPad sẽ bị thay bằng bản này.</p>
+      <div class="actions"><button class="btn ghost" data-close>Huỷ</button><button class="btn warn" id="k-ok">Khôi phục</button></div>`);
+    $("#k-ok").onclick = async () => { try { await db.replaceAll(data.docs); closeSheet(); toast("Đã khôi phục dữ liệu"); } catch(err){ toast(errMsg(err)); } };
+  };
+  $("#csvOut").onclick = async () => {
+    const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
+    const maOf = so => cards.find(c=>c.so===so)?.ma || "";
+    const rows = [["STT thẻ","Mã thẻ","Bệnh nhân","Phòng/giường","SĐT","Người nhận thay","Giao lúc","Trả lúc","Trạng thái","Ghi chú"]];
+    Object.values(loans).sort((a,b)=>(a.giaoLuc||"").localeCompare(b.giaoLuc||"")).forEach(l => rows.push(
+      [l.so,(l.ma||maOf(l.so)) ? `="${l.ma||maOf(l.so)}"` : "",l.ten,l.phong,l.sdt,l.nguoiNhan,fmt(l.giaoLuc),l.traLuc?fmt(l.traLuc):"",l.matThe?"Mất thẻ":(l.traLuc?"Đã trả":"Chưa trả"),l.ghiChu]));
+    await giveFile(`the-thang-may_${stamp()}.csv`, "﻿" + rows.map(r=>r.map(v=>typeof v==="string" && v.startsWith("=\"") ? v : q(v)).join(",")).join("\r\n"), "text/csv");
+  };
+
+  /* ---------- boot ---------- */
+  render();
+  (async () => {
+    try { db = await makeLocalDb(); }
+    catch(e){ banner("Không mở được bộ nhớ trên máy. Nếu đang dùng Safari ở chế độ Riêng tư, hãy mở bằng tab thường."); return; }
+    if(db.size()===0){   // first run: 30 cards 01–30
+      for(let i=1;i<=30;i++){ const so=String(i).padStart(2,"0"); await db.doc("the/"+so).set({so, trangThai:"kho", luotId:null, ghiChu:""}); }
+    }
+    try { navigator.storage?.persist?.(); } catch {}
+    db.collection("the").onSnapshot(s => { cards = s.docs.map(d=>({id:d.id, ...d.data()})); render(); });
+    db.collection("luot").onSnapshot(s => { const m={}; s.docs.forEach(d=>m[d.id]={id:d.id, ...d.data()}); loans=m; render(); });
+    autoSnap(); scheduleMidnight();
+    setBkInfo();
+    try { const t = localStorage.getItem("lastBackup"), hasLoans = Object.keys(db.dump()).some(k=>k.startsWith("luot/"));
+      if(hasLoans && !t) banner("Nhắc: chưa sao lưu dữ liệu lần nào. Vào Quản lý thẻ → Lưu bản sao lưu.");
+      else if(hasLoans && days(t)>=7) banner("Nhắc: đã hơn 7 ngày chưa sao lưu dữ liệu. Vào Quản lý thẻ → Lưu bản sao lưu."); } catch {}
+  })();
+  if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>

@@ -86,8 +86,8 @@ h1{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0;letter-
 .tag{position:relative;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:8px 8px 7px 10px;display:flex;flex-direction:column;gap:3px;min-height:92px;min-width:0;transition:transform .12s}
 .tag:active{transform:scale(.97)}
 .tag .num{font-family:var(--mono);font-weight:700;font-size:1.35rem;line-height:1.05;letter-spacing:-.02em}
-.tag .code{font-family:var(--mono);line-height:1.05;min-width:0;padding-right:22px}
-.tag .code .pre{display:block;font-size:.72rem;font-weight:600;color:var(--muted);letter-spacing:.02em;overflow-wrap:anywhere}
+.tag .code{font-family:var(--mono);line-height:1.05;min-width:0;padding-right:18px}
+.tag .code .pre{display:block;font-size:.62rem;font-weight:600;color:var(--muted);letter-spacing:0;white-space:nowrap;overflow:hidden;line-height:1.5}
 .tag .code .end{display:block;font-size:1.4rem;font-weight:800;letter-spacing:.01em}
 .tag .nocode{font-size:.7rem;color:var(--muted);font-style:italic}
 .tag .stt{position:absolute;top:6px;right:6px;font-family:var(--mono);font-size:.68rem;font-weight:700;color:var(--muted);background:var(--sunk);border-radius:6px;padding:1px 5px}
@@ -173,6 +173,14 @@ textarea.t{resize:vertical;min-height:60px}
 .pad .base{position:absolute;left:24px;right:24px;bottom:44px;border-bottom:1.5px solid #c9c4b5;pointer-events:none}
 .pad .hint{position:absolute;left:24px;bottom:16px;font-size:.8rem;color:#8a8576;pointer-events:none}
 .pad.signed .hint{display:none}
+.lang{display:flex;gap:6px;flex-wrap:wrap}
+.sheet > .sheet-head{position:sticky;top:-20px;z-index:3;background:var(--surface);margin:-20px -20px 0;padding:16px 20px 10px;border-bottom:1px solid var(--line)}
+.cam{margin:0;padding:10px 12px;border-radius:10px;background:var(--accent-soft);color:var(--fg);font-size:.92rem;line-height:1.45}
+.sigs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.sigs .pad{height:170px}
+.cam p{margin:4px 0 0}
+.cam .cam-vi{font-size:.8rem;color:var(--muted)}
+.who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.85rem;font-weight:600;color:var(--muted)}
 .sigimg{background:var(--paper);border:1px solid var(--line);border-radius:12px;max-width:100%;height:auto;display:block}
 .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .err{color:var(--bad);font-size:.9rem;font-weight:500}
@@ -459,8 +467,8 @@ textarea.t{resize:vertical;min-height:60px}
   }
 
   /* ---------- sheets ---------- */
-  let pad = null;
-  function closeSheet(){ pad?.destroy(); pad=null; $("#sheetRoot").innerHTML=""; }
+  let pad = null, pad2 = null;
+  function closeSheet(){ pad?.destroy(); pad2?.destroy(); pad=null; pad2=null; $("#sheetRoot").innerHTML=""; }
   function openSheet(html){
     $("#sheetRoot").innerHTML = `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
     const scrim = $("#sheetRoot .scrim");
@@ -472,28 +480,74 @@ textarea.t{resize:vertical;min-height:60px}
   const head = (so, title) => { const cc = cards.find(x=>x.so===so); return `<div class="sheet-head"><span class="bigtag">${cc?.ma ? `${esc(cc.ma)}<small>Mã thẻ · STT ${esc(so)}</small>` : `${esc(so)}${cc?"<small>Chưa có mã thẻ</small>":""}`}</span><h2>${title}</h2><button class="x" data-close aria-label="Đóng">×</button></div>`; };
   const sigBlock = label => `<div class="sigbox"><div class="sighead"><span>${label}</span><button type="button" data-clear>Ký lại</button></div><div class="pad" id="pad"></div></div>`;
 
+  /* ---------- hand-over sheet: Vietnamese / English / Russian ---------- */
+  const I18N = {
+    vi: { title:"Giao thẻ cho bệnh nhân", code:"Mã thẻ", no:"STT", nocode:"Chưa có mã thẻ",
+      ten:"Họ tên bệnh nhân *", phong:"Phòng / giường", phongPh:"VD: 305 – G2", sdt:"Số điện thoại",
+      nguoi:"Người nhà (họ tên, quan hệ)", nguoiPh:"VD: con trai – Nguyễn Văn B", note:"Ghi chú",
+      camH:"Cam kết", cam:(c)=>`Tôi xác nhận đã nhận thẻ thang máy ${c.ma ? "mã " + c.ma : "số " + c.so} và sẽ trả lại khi ra viện. Nếu làm mất hoặc hỏng thẻ, tôi sẽ báo ngay cho nhân viên khoa.`,
+      who:"Người ký", whoBN:"Bệnh nhân", whoNN:"Người nhà", sig:"Chữ ký bệnh nhân hoặc người nhà *", viNote:"",
+      clear:"Ký lại", hint:"Ký tên bằng ngón tay vào đây", cancel:"Huỷ", ok:"Xác nhận giao thẻ", lost:"Báo mất / hỏng",
+      eTen:"Cần nhập họ tên bệnh nhân.", eSig:"Cần chữ ký của bệnh nhân hoặc người nhà.", eNN:"Người nhà ký: cần ghi họ tên người nhà." },
+    en: { title:"Elevator card handover", code:"Card code", no:"No.", nocode:"No card code yet",
+      ten:"Patient's full name *", phong:"Room / bed", phongPh:"e.g. 305 – B2", sdt:"Phone number",
+      nguoi:"Family member (name, relationship)", nguoiPh:"e.g. son – John Smith", note:"Notes",
+      camH:"Commitment", cam:(c)=>`I confirm that I have received elevator card ${c.ma ? "code " + c.ma : "No. " + c.so} and will return it when I am discharged from the hospital. If the card is lost or damaged, I will inform the ward staff immediately.`,
+      who:"Signed by", whoBN:"Patient", whoNN:"Family member", sig:"Signature of patient or family member *", viNote:"Tiếng Việt (cho nhân viên):",
+      clear:"Clear", hint:"Sign here with your finger", cancel:"Cancel", ok:"Confirm handover", lost:"Report lost / damaged",
+      eTen:"Please enter the patient's full name.", eSig:"A signature from the patient or a family member is required.", eNN:"Signed by a family member: please enter their name." },
+    ru: { title:"Выдача карты для лифта", code:"Код карты", no:"№", nocode:"Код карты не указан",
+      ten:"ФИО пациента *", phong:"Палата / койка", phongPh:"напр. 305 – К2", sdt:"Номер телефона",
+      nguoi:"Родственник (имя, степень родства)", nguoiPh:"напр. сын – Иван Петров", note:"Примечание",
+      camH:"Обязательство", cam:(c)=>`Я подтверждаю, что получил(а) карту для лифта ${c.ma ? "с кодом " + c.ma : "№ " + c.so} и верну её при выписке из больницы. В случае потери или повреждения карты я сразу сообщу персоналу отделения.`,
+      who:"Подписывает", whoBN:"Пациент", whoNN:"Родственник", sig:"Подпись пациента или родственника *", viNote:"Tiếng Việt (cho nhân viên):",
+      clear:"Очистить", hint:"Распишитесь здесь пальцем", cancel:"Отмена", ok:"Подтвердить выдачу", lost:"Сообщить о потере / поломке",
+      eTen:"Введите ФИО пациента.", eSig:"Нужна подпись пациента или родственника.", eNN:"Подписывает родственник: укажите его имя." }
+  };
+  const LANG_NAME = {vi:"Tiếng Việt", en:"English", ru:"Русский"};
+
   function giaoSheet(c){
-    const s = openSheet(`${head(c.so,"Giao thẻ cho bệnh nhân")}
+    let lang = "vi";
+    const s = openSheet(`<div class="sheet-head"><span class="bigtag">${c.ma ? `${esc(c.ma)}<small data-t="codeline"></small>` : `${esc(c.so)}<small data-t="nocode"></small>`}</span><h2 data-t="title"></h2><button class="x" data-close aria-label="Đóng">×</button></div>
+      <div class="lang" role="group" aria-label="Ngôn ngữ / Language / Язык">${Object.keys(LANG_NAME).map(k=>`<button type="button" class="chip" data-lang="${k}" aria-pressed="${k==="vi"}">${LANG_NAME[k]}</button>`).join("")}</div>
       <div class="grid2">
-        <label class="f">Họ tên bệnh nhân *<input class="t" id="g-ten" autocomplete="off"></label>
-        <label class="f">Phòng / giường<input class="t" id="g-phong" autocomplete="off" placeholder="VD: 305 – G2"></label>
-        <label class="f">Số điện thoại<input class="t" id="g-sdt" inputmode="tel" autocomplete="off"></label>
-        <label class="f">Người nhận thay (nếu có)<input class="t" id="g-nguoi" autocomplete="off" placeholder="VD: con trai – Nguyễn Văn B"></label>
+        <label class="f"><span data-t="ten"></span><input class="t" id="g-ten" autocomplete="off"></label>
+        <label class="f"><span data-t="phong"></span><input class="t" id="g-phong" autocomplete="off" data-ph="phongPh"></label>
+        <label class="f"><span data-t="sdt"></span><input class="t" id="g-sdt" inputmode="tel" autocomplete="off"></label>
+        <label class="f"><span data-t="nguoi"></span><input class="t" id="g-nguoi" autocomplete="off" data-ph="nguoiPh"></label>
       </div>
-      <label class="f">Ghi chú<textarea class="t" id="g-note" rows="2"></textarea></label>
-      ${sigBlock("Chữ ký người nhận thẻ *")}
+      <label class="f"><span data-t="note"></span><textarea class="t" id="g-note" rows="1"></textarea></label>
+      <div class="cam"><b data-t="camH"></b><p id="g-cam"></p><p class="cam-vi" id="g-cam-vi"></p></div>
+      <div class="who"><span data-t="who"></span><div class="chips" id="g-who"><button type="button" class="chip" data-who="bn" aria-pressed="true" data-t="whoBN"></button><button type="button" class="chip" data-who="nn" aria-pressed="false" data-t="whoNN"></button></div></div>
+      <div class="sigbox"><div class="sighead"><span data-t="sig"></span><button type="button" data-clear="1" data-t="clear"></button></div><div class="pad" id="pad"></div></div>
       <div class="err" id="g-err"></div>
-      <div class="actions"><button class="btn ghost" data-close>Huỷ</button><button class="btn primary" id="g-ok">Xác nhận giao thẻ</button></div>`);
-    pad = makePad($("#pad")); s.querySelector("[data-clear]").onclick = () => pad.clear();
+      <div class="actions"><button class="btn ghost" data-close data-t="cancel"></button><button class="btn primary" id="g-ok" data-t="ok"></button></div>`);
+    let who = "bn";
+    pad = makePad($("#pad"));
+    s.querySelector('[data-clear="1"]').onclick = () => pad.clear();
+    $("#g-who").onclick = e => { const b = e.target.closest("[data-who]"); if(!b) return; who = b.dataset.who;
+      $("#g-who").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x===b)); $("#g-err").textContent = ""; };
+    const apply = () => { const T = I18N[lang];
+      s.querySelectorAll("[data-t]").forEach(el => { const k = el.dataset.t; el.textContent = k==="codeline" ? `${T.code} · ${T.no} ${c.so}` : (T[k] ?? ""); });
+      s.querySelectorAll("[data-ph]").forEach(el => el.placeholder = T[el.dataset.ph]);
+      s.querySelectorAll(".pad .hint").forEach(el => el.textContent = T.hint);
+      $("#g-cam").textContent = T.cam(c);
+      $("#g-cam-vi").textContent = lang==="vi" ? "" : T.viNote + " " + I18N.vi.cam(c); $("#g-cam-vi").hidden = lang==="vi";
+      s.querySelectorAll("[data-lang]").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang===lang));
+      s.querySelector(".sheet").setAttribute?.("lang", lang); $("#g-err").textContent = ""; };
+    s.querySelector(".lang").onclick = e => { const b = e.target.closest("[data-lang]"); if(b){ lang = b.dataset.lang; apply(); } };
+    apply();
     setTimeout(()=>$("#g-ten")?.focus(), 50);
     $("#g-ok").onclick = async () => {
-      const ten = $("#g-ten").value.trim();
-      if(!ten) return $("#g-err").textContent = "Cần nhập họ tên bệnh nhân.";
-      if(pad.isEmpty()) return $("#g-err").textContent = "Cần chữ ký của người nhận thẻ.";
+      const T = I18N[lang], ten = $("#g-ten").value.trim(), nguoi = $("#g-nguoi").value.trim();
+      if(!ten) return $("#g-err").textContent = T.eTen;
+      if(pad.isEmpty()) return $("#g-err").textContent = T.eSig;
+      if(who==="nn" && !nguoi) return $("#g-err").textContent = T.eNN;
       $("#g-ok").disabled = true; $("#g-err").textContent = "";
       const id = "L" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
       const rec = {so:c.so, ma:c.ma||"", theId:c.id, ten, phong:$("#g-phong").value.trim(), sdt:$("#g-sdt").value.trim(),
-        nguoiNhan:$("#g-nguoi").value.trim(), ghiChu:$("#g-note").value.trim(), giaoLuc:new Date().toISOString(), kyGiao:pad.toData(), traLuc:null};
+        nguoiNhan:nguoi, ghiChu:$("#g-note").value.trim(), giaoLuc:new Date().toISOString(),
+        kyGiao: pad.toData(), nguoiKy: who, ngonNgu: lang, camKet: T.cam(c), camKetVi: I18N.vi.cam(c), traLuc:null};
       try {
         await db.doc("luot/"+id).set(rec);
         await db.doc("the/"+c.id).update({trangThai:"muon", luotId:id});
@@ -509,11 +563,13 @@ textarea.t{resize:vertical;min-height:60px}
         <dt>Bệnh nhân</dt><dd>${esc(l.ten)}</dd>
         ${l.phong?`<dt>Phòng</dt><dd>${esc(l.phong)}</dd>`:""}
         ${l.sdt?`<dt>Điện thoại</dt><dd>${esc(l.sdt)}</dd>`:""}
-        ${l.nguoiNhan?`<dt>Người nhận thay</dt><dd>${esc(l.nguoiNhan)}</dd>`:""}
+        ${l.nguoiNhan?`<dt>Người nhà</dt><dd>${esc(l.nguoiNhan)}</dd>`:""}${l.ngonNgu&&l.ngonNgu!=="vi"?`<dt>Ngôn ngữ</dt><dd>${LANG_NAME[l.ngonNgu]||l.ngonNgu}</dd>`:""}
         <dt>Giao lúc</dt><dd>${fmt(l.giaoLuc)} (${days(l.giaoLuc)} ngày)</dd>
         ${l.ghiChu?`<dt>Ghi chú</dt><dd>${esc(l.ghiChu)}</dd>`:""}
       </dl>
-      ${l.kyGiao?`<div class="sigbox"><div class="sighead"><span>Chữ ký khi nhận thẻ</span></div><img class="sigimg" src="${l.kyGiao}" alt="Chữ ký khi nhận thẻ"></div>`:""}
+      ${l.camKet?`<div class="cam"><b>Cam kết đã ký${l.ngonNgu&&l.ngonNgu!=="vi"?` (${LANG_NAME[l.ngonNgu]||l.ngonNgu})`:""}</b><p>${esc(l.camKet)}</p>${l.ngonNgu&&l.ngonNgu!=="vi"&&l.camKetVi?`<p class="cam-vi">${esc(l.camKetVi)}</p>`:""}</div>`:""}
+      ${l.kyGiao?`<div class="sigbox"><div class="sighead"><span>Chữ ký ${l.nguoiKy==="nn"?"người nhà"+(l.nguoiNhan?" ("+esc(l.nguoiNhan)+")":""):"bệnh nhân"} khi nhận thẻ</span></div><img class="sigimg" src="${l.kyGiao}" alt="Chữ ký khi nhận thẻ"></div>`:""}
+      ${l.kyNguoiNha?`<div class="sigbox"><div class="sighead"><span>Chữ ký người nhà khi nhận thẻ</span></div><img class="sigimg" src="${l.kyNguoiNha}" alt="Chữ ký người nhà"></div>`:""}
       ${sigBlock("Chữ ký khi trả thẻ (không bắt buộc)")}
       <div class="err" id="r-err"></div>
       <div class="actions">
@@ -575,7 +631,7 @@ textarea.t{resize:vertical;min-height:60px}
   }
 
   function khoExtra(c){ giaoSheet(c);
-    const a = $("#sheetRoot .actions"); const b = document.createElement("button"); b.className="btn danger"; b.textContent="Báo mất / hỏng"; b.style.marginRight="auto";
+    const a = $("#sheetRoot .actions"); const b = document.createElement("button"); b.className="btn danger"; b.textContent="Báo mất / hỏng"; b.dataset.t="lost"; b.style.marginRight="auto";
     b.onclick = () => { closeSheet(); matHongSheet(c); };
     a.prepend(b);
   }
@@ -598,12 +654,14 @@ textarea.t{resize:vertical;min-height:60px}
       <dl class="facts">
         ${l.phong?`<dt>Phòng</dt><dd>${esc(l.phong)}</dd>`:""}
         ${l.sdt?`<dt>Điện thoại</dt><dd>${esc(l.sdt)}</dd>`:""}
-        ${l.nguoiNhan?`<dt>Người nhận thay</dt><dd>${esc(l.nguoiNhan)}</dd>`:""}
+        ${l.nguoiNhan?`<dt>Người nhà</dt><dd>${esc(l.nguoiNhan)}</dd>`:""}${l.ngonNgu&&l.ngonNgu!=="vi"?`<dt>Ngôn ngữ</dt><dd>${LANG_NAME[l.ngonNgu]||l.ngonNgu}</dd>`:""}
         <dt>Giao lúc</dt><dd>${fmt(l.giaoLuc)}</dd>
         <dt>Trả lúc</dt><dd>${l.traLuc?fmt(l.traLuc):"Chưa trả"}</dd>
         ${l.ghiChu?`<dt>Ghi chú</dt><dd>${esc(l.ghiChu)}</dd>`:""}
       </dl>
-      ${l.kyGiao?`<div class="sigbox"><div class="sighead"><span>Chữ ký khi nhận thẻ</span></div><img class="sigimg" src="${l.kyGiao}" alt="Chữ ký khi nhận thẻ"></div>`:""}
+      ${l.camKet?`<div class="cam"><b>Cam kết đã ký${l.ngonNgu&&l.ngonNgu!=="vi"?` (${LANG_NAME[l.ngonNgu]||l.ngonNgu})`:""}</b><p>${esc(l.camKet)}</p>${l.ngonNgu&&l.ngonNgu!=="vi"&&l.camKetVi?`<p class="cam-vi">${esc(l.camKetVi)}</p>`:""}</div>`:""}
+      ${l.kyGiao?`<div class="sigbox"><div class="sighead"><span>Chữ ký ${l.nguoiKy==="nn"?"người nhà"+(l.nguoiNhan?" ("+esc(l.nguoiNhan)+")":""):"bệnh nhân"} khi nhận thẻ</span></div><img class="sigimg" src="${l.kyGiao}" alt="Chữ ký khi nhận thẻ"></div>`:""}
+      ${l.kyNguoiNha?`<div class="sigbox"><div class="sighead"><span>Chữ ký người nhà khi nhận thẻ</span></div><img class="sigimg" src="${l.kyNguoiNha}" alt="Chữ ký người nhà"></div>`:""}
       ${l.kyTra?`<div class="sigbox"><div class="sighead"><span>Chữ ký khi trả thẻ</span></div><img class="sigimg" src="${l.kyTra}" alt="Chữ ký khi trả thẻ"></div>`:""}
       <div class="actions"><button class="btn ghost" data-close>Đóng</button></div>`);
   }
@@ -854,7 +912,7 @@ textarea.t{resize:vertical;min-height:60px}
   $("#csvOut").onclick = async () => {
     const q = v => `"${String(v??"").replace(/"/g,'""')}"`;
     const maOf = so => cards.find(c=>c.so===so)?.ma || "";
-    const rows = [["STT thẻ","Mã thẻ","Bệnh nhân","Phòng/giường","SĐT","Người nhận thay","Giao lúc","Trả lúc","Trạng thái","Ghi chú"]];
+    const rows = [["STT thẻ","Mã thẻ","Bệnh nhân","Phòng/giường","SĐT","Người nhà","Giao lúc","Trả lúc","Trạng thái","Ghi chú"]];
     Object.values(loans).sort((a,b)=>(a.giaoLuc||"").localeCompare(b.giaoLuc||"")).forEach(l => rows.push(
       [l.so,(l.ma||maOf(l.so)) ? `="${l.ma||maOf(l.so)}"` : "",l.ten,l.phong,l.sdt,l.nguoiNhan,fmt(l.giaoLuc),l.traLuc?fmt(l.traLuc):"",l.matThe?"Mất thẻ":(l.traLuc?"Đã trả":"Chưa trả"),l.ghiChu]));
     await giveFile(`the-thang-may_${stamp()}.csv`, "﻿" + rows.map(r=>r.map(v=>typeof v==="string" && v.startsWith("=\"") ? v : q(v)).join(",")).join("\r\n"), "text/csv");

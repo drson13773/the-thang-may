@@ -22,7 +22,7 @@ html,body{margin:0}
   --fg:#16252b; --muted:#5d6f76;
   --accent:#0f6f7c; --accent-ink:#ffffff; --accent-soft:#d6eef0;
   --out:#b8560f; --out-soft:#fbe8d8;
-  --bad:#b3261e; --bad-soft:#f8dcda;
+  --bad:#c00000; --bad-soft:#fbdada;
   --ok:#2d7a3e; --ok-soft:#dbefdf;
   --paper:#fffef9; --ink:#14213d;
   --brand:#1e5b8c; --brand-ink:#ffffff;
@@ -35,18 +35,18 @@ html,body{margin:0}
   --bg:#0f1719; --surface:#172225; --sunk:#1e2c30; --line:#2c3d42;
   --fg:#e4eef0; --muted:#93a8ae;
   --accent:#4fb8c4; --accent-ink:#06262b; --accent-soft:#163b40;
-  --out:#f0a25e; --out-soft:#3d2a18; --bad:#f2867e; --bad-soft:#40201e;
+  --out:#f0a25e; --out-soft:#3d2a18; --bad:#ff4d4d; --bad-soft:#4a1818;
   --ok:#7fcf8e; --ok-soft:#1d3a23; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1719; --surface:#172225; --sunk:#1e2c30; --line:#2c3d42;
   --fg:#e4eef0; --muted:#93a8ae;
   --accent:#4fb8c4; --accent-ink:#06262b; --accent-soft:#163b40;
-  --out:#f0a25e; --out-soft:#3d2a18; --bad:#f2867e; --bad-soft:#40201e;
+  --out:#f0a25e; --out-soft:#3d2a18; --bad:#ff4d4d; --bad-soft:#4a1818;
   --ok:#7fcf8e; --ok-soft:#1d3a23; color-scheme:dark}
 *{box-sizing:border-box}
 /* department banner */
 .khoa{background:var(--brand);color:var(--brand-ink);padding-inline:16px;padding-block:14px}
-.khoa-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:10px 14px}
+.khoa-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:10px 10px}
 .logo{flex:none;width:68px;height:68px;display:grid;place-items:center;filter:drop-shadow(0 2px 4px rgb(0 0 0/.25))}
 .logo img{width:100%;height:100%;object-fit:contain}
 .logo span{color:var(--brand);font-weight:800;font-size:1.8rem;line-height:1}
@@ -61,18 +61,18 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
-header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px 8px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px 8px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;align-items:center;gap:10px 10px}
 .brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 h1{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .clock{color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
-.stats{display:flex;gap:6px;flex-wrap:wrap}
-.stat{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;background:var(--surface);color:var(--fg);border:1px solid var(--line);font:inherit;font-size:.92rem;font-weight:600;cursor:pointer}
+.stats{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.stat{display:flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 16px;border-radius:999px;background:var(--surface);color:var(--fg);border:1px solid var(--line);font:inherit;font-size:.92rem;font-weight:600;cursor:pointer}
 .stat[aria-pressed="true"]{background:var(--khoa);color:var(--khoa-ink);border-color:var(--khoa)}
 .stat b{font-family:var(--mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
 .dot{width:12px;height:12px;border-radius:50%}
 .stat[aria-pressed="true"] .dot{box-shadow:0 0 0 2px var(--khoa-ink)}
-.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:12px;width:max-content;max-width:100%;overflow-x:auto}
-.tabs button{border:0;background:none;padding:7px 14px;border-radius:9px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tabs{display:flex;align-items:center;gap:4px;height:42px;background:var(--sunk);padding:4px;border-radius:12px;width:max-content;max-width:100%;overflow-x:auto}
+.tabs button{border:0;background:none;height:34px;padding:0 16px;border-radius:9px;font-weight:600;color:var(--muted);white-space:nowrap}
 .tabs button[aria-selected="true"]{background:var(--khoa);color:var(--khoa-ink);box-shadow:0 1px 3px rgb(0 0 0/.18)}
 
 .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-block:10px 10px}
@@ -100,7 +100,7 @@ h1{font-family:var(--display);font-weight:700;font-size:1.25rem;margin:0;letter-
 .late.soft{background:var(--sunk);color:var(--muted)}
 .tag.kho{border-left:5px solid var(--ok)} .tag.kho .state{color:var(--ok)}
 .tag.muon{border-left:5px solid var(--out);background:linear-gradient(var(--out-soft),var(--surface) 80%)} .tag.muon .state{color:var(--out)}
-.tag.hong{border-left:5px solid var(--bad);opacity:.85} .tag.hong .state{color:var(--bad)}
+.tag.hong{border-left:5px solid var(--bad);background:linear-gradient(var(--bad-soft),var(--surface) 80%)} .tag.hong .state{color:var(--bad)}
 .late{font-size:.66rem!important;display:inline-block;margin-left:4px;padding:0 5px;border-radius:5px;background:var(--bad-soft);color:var(--bad);font-size:.72rem;font-weight:600;text-transform:none;letter-spacing:0}
 
 .empty{padding:40px 20px;text-align:center;color:var(--muted);border:2px dashed var(--line);border-radius:16px}
@@ -151,9 +151,13 @@ input.t,textarea.t{font:inherit;font-size:1rem;color:var(--fg);background:var(--
 textarea.t{resize:vertical;min-height:60px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 .btn{border:0;border-radius:12px;padding:13px 20px;font-weight:600;font-size:1rem;background:var(--sunk)}
-.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);transition:background-color .15s,color .15s,border-color .15s}
+.btn.primary:hover,.btn.primary:active,.btn.primary.is-pressed,.btn.primary:focus-visible {background:var(--khoa);color:var(--khoa-ink);border-color:var(--khoa)}
 .btn.warn{background:var(--out);color:#fff}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.green,.bk-pair .btn.sel{background:var(--khoa);color:var(--khoa-ink);border:1px solid var(--khoa)}
+.bk-pair .btn:not(.sel){background:var(--surface);color:var(--fg);border:1px solid var(--line)}
+.bk-pair .btn:disabled{opacity:.45}
 .btn.ghost{background:none;border:1px solid var(--line)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 
@@ -207,9 +211,10 @@ textarea.t{resize:vertical;min-height:60px}
 <div class="wrap">
   <header class="top">
     <div class="stats">
+      <button type="button" class="stat" data-f="all" aria-pressed="true">Tất cả <b id="sAll">–</b></button>
       <button type="button" class="stat" data-f="kho" aria-pressed="false"><span class="dot" style="background:var(--ok)"></span>Trong kho <b id="sKho">–</b></button>
       <button type="button" class="stat" data-f="muon" aria-pressed="false"><span class="dot" style="background:var(--out)"></span>Đang cho mượn <b id="sMuon">–</b></button>
-      <button type="button" class="stat" data-f="hong" aria-pressed="false"><span class="dot" style="background:var(--bad)"></span>Mất / hỏng <b id="sHong">–</b></button>
+      <button type="button" class="stat" data-f="hong" aria-pressed="false"><span class="dot" style="background:var(--bad)"></span>Mất / Hỏng <b id="sHong">–</b></button>
     </div>
     <div class="tabs" role="tablist">
       <button role="tab" id="tab-the" aria-selected="true">Thẻ</button>
@@ -224,12 +229,6 @@ textarea.t{resize:vertical;min-height:60px}
   <section id="v-the">
     <div class="toolbar">
       <input class="search" id="q1" type="search" placeholder="Tìm mã thẻ (gõ vài số cuối), tên bệnh nhân, phòng…" autocomplete="off">
-      <div class="chips" id="f1">
-        <button class="chip" data-f="all" aria-pressed="true">Tất cả</button>
-        <button class="chip" data-f="kho" aria-pressed="false">Trong kho</button>
-        <button class="chip" data-f="muon" aria-pressed="false">Đang mượn</button>
-        <button class="chip" data-f="hong" aria-pressed="false">Mất / hỏng</button>
-      </div>
     </div>
     <div class="rack" id="rack"></div>
   </section>
@@ -259,10 +258,10 @@ textarea.t{resize:vertical;min-height:60px}
         </div>
         <div id="bcBody"></div>
         <div class="warnline" id="bcWarn"></div>
-        <div class="actions" style="margin-top:12px;justify-content:flex-start">
-          <button class="btn primary" id="bcSend">Gửi / sao chép nội dung</button>
-          <button class="btn ghost" id="bcCsv">Xuất file Excel</button>
-          <button class="btn ghost" id="bcMark">Đánh dấu đã báo IT</button>
+        <div class="actions bk-pair" style="margin-top:12px;justify-content:flex-start">
+          <button class="btn sel" id="bcSend">Gửi / sao chép nội dung</button>
+          <button class="btn" id="bcCsv">Xuất file Excel</button>
+          <button class="btn" id="bcMark">Đánh dấu đã báo IT</button>
         </div>
       </div>
     </div>
@@ -276,7 +275,7 @@ textarea.t{resize:vertical;min-height:60px}
         <div class="inline">
           <input class="t" id="newCard" placeholder="STT" autocomplete="off" style="flex:0 1 90px">
           <input class="t" id="newMa" placeholder="Mã thẻ" autocomplete="off">
-          <button class="btn primary" id="addCard">Lưu</button>
+          <button class="btn primary green" id="addCard">Lưu</button>
         </div>
         <div class="err" id="addErr"></div>
       </div>
@@ -284,7 +283,7 @@ textarea.t{resize:vertical;min-height:60px}
         <h3>Nhập nhanh nhiều mã thẻ</h3>
         <p>Dán một cột mã thẻ (mỗi dòng một mã): app gắn lần lượt vào các thẻ chưa có mã, theo STT 01, 02, 03… Hoặc mỗi dòng ghi “STT mã thẻ” để gắn đúng thẻ.</p>
         <textarea class="t" id="bulkMa" rows="5" placeholder="416545641651&#10;416545641652&#10;416545641653" spellcheck="false" autocapitalize="off" style="font-family:var(--mono)"></textarea>
-        <div class="actions" style="margin-top:10px;justify-content:flex-start"><button class="btn primary" id="bulkOk">Cập nhật mã</button></div>
+        <div class="actions" style="margin-top:10px;justify-content:flex-start"><button class="btn primary green" id="bulkOk">Cập nhật mã</button></div>
         <div class="err" id="bulkErr"></div>
       </div>
       <div class="panel wide">
@@ -296,9 +295,9 @@ textarea.t{resize:vertical;min-height:60px}
       <div class="panel wide">
         <h3>Sao lưu dữ liệu</h3>
         <p>Dữ liệu chỉ nằm trong iPad này. Nên lưu một bản sao (vào ứng dụng Tệp, AirDrop hoặc gửi qua Zalo/email) mỗi tuần, phòng khi máy hỏng hoặc bị xoá dữ liệu Safari.</p>
-        <div class="inline">
-          <button class="btn primary" id="bkOut">Lưu bản sao lưu</button>
-          <button class="btn ghost" id="bkIn">Khôi phục từ bản sao lưu</button>
+        <div class="inline bk-pair">
+          <button class="btn sel" id="bkOut">Lưu bản sao lưu</button>
+          <button class="btn" id="bkIn">Khôi phục từ bản sao lưu</button>
           <input type="file" id="bkFile" accept=".json,application/json" hidden>
         </div>
         <p style="margin:10px 0 0" id="bkInfo"></p>
@@ -309,7 +308,7 @@ textarea.t{resize:vertical;min-height:60px}
       <div class="panel">
         <h3>Xuất danh sách ra Excel</h3>
         <p>Tạo file CSV mở được bằng Excel / Numbers: số thẻ, bệnh nhân, phòng, SĐT, giờ giao, giờ trả. (Không gồm hình chữ ký.)</p>
-        <button class="btn ghost" id="csvOut">Xuất file CSV</button>
+        <button class="btn green" id="csvOut">Xuất file CSV</button>
       </div>
     </div>
   </section>
@@ -352,18 +351,21 @@ textarea.t{resize:vertical;min-height:60px}
   }));
   function chipGroup(sel, set){ $(sel).addEventListener("click", e => { const b=e.target.closest(".chip"); if(!b) return;
     $(sel).querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c===b)); set(b.dataset.f); render(); }); }
-  function syncF1(){ $("#f1").querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed", c.dataset.f===f1));
-    document.querySelectorAll(".stat").forEach(b=>b.setAttribute("aria-pressed", b.dataset.f===f1)); }
-  chipGroup("#f1", v=>{ f1=v; syncF1(); }); chipGroup("#f2", v=>f2=v);
+  function syncF1(){ document.querySelectorAll(".stat").forEach(b=>b.setAttribute("aria-pressed", b.dataset.f===f1)); }
+  chipGroup("#f2", v=>f2=v);
   document.querySelector(".stats").addEventListener("click", e => { const b=e.target.closest(".stat"); if(!b) return;
-    f1 = f1===b.dataset.f ? "all" : b.dataset.f; syncF1(); $("#tab-the").click(); render(); }); chipGroup("#f3", v=>{f3=v; bcTouched=false;});
+    f1 = (f1===b.dataset.f || b.dataset.f==="all") ? "all" : b.dataset.f; syncF1(); $("#tab-the").click(); render(); }); chipGroup("#f3", v=>{f3=v; bcTouched=false;});
+  // touch screens: keep the green "pressed" state visible for a moment after a tap
+  document.addEventListener("pointerdown", e => { const b = e.target.closest(".btn.primary"); if(!b) return;
+    b.classList.add("is-pressed"); const off = () => setTimeout(()=>b.classList.remove("is-pressed"), 220);
+    b.addEventListener("pointerup", off, {once:true}); b.addEventListener("pointercancel", off, {once:true}); });
   $("#q1").addEventListener("input", render); $("#q2").addEventListener("input", render);
 
   /* ---------- render ---------- */
   const sortNum = (a,b) => a.so.localeCompare(b.so, "vi", {numeric:true});
   function render(){
     const kho = cards.filter(c=>c.trangThai==="kho").length, muon = cards.filter(c=>c.trangThai==="muon").length, hong = cards.filter(c=>c.trangThai==="hong").length;
-    $("#sKho").textContent = kho; $("#sMuon").textContent = muon; $("#sHong").textContent = hong;
+    $("#sKho").textContent = kho; $("#sMuon").textContent = muon; $("#sHong").textContent = hong; $("#sAll").textContent = cards.length;
 
     // rack
     const q = $("#q1").value.trim().toLowerCase();
@@ -899,12 +901,16 @@ textarea.t{resize:vertical;min-height:60px}
 
   function setBkInfo(){ try { const t = localStorage.getItem("lastBackup"); $("#bkInfo").textContent = t ? "Lần sao lưu gần nhất: " + fmt(t) : "Chưa sao lưu lần nào."; } catch { $("#bkInfo").textContent=""; } }
 
-  $("#bkOut").onclick = async () => {
+  $("#bkOut").onclick = async () => { bkSel("bkOut");
     if(!db) return;
     const ok = await giveFile(`the-thang-may_saoluu_${stamp()}.json`, JSON.stringify({app:"the-thang-may", v:1, luc:new Date().toISOString(), docs:db.dump()}), "application/json");
     if(ok){ try { localStorage.setItem("lastBackup", new Date().toISOString()); } catch {} setBkInfo(); toast("Đã tạo bản sao lưu"); }
   };
-  $("#bkIn").onclick = () => $("#bkFile").click();
+  const bkSel = id => { const g = document.getElementById(id)?.closest(".bk-pair"); g?.querySelectorAll(".btn").forEach(b=>b.classList.toggle("sel", b.id===id)); };
+  ["bcSend","bcCsv","bcMark"].forEach(id => $("#"+id).addEventListener("pointerdown", () => { if(!$("#"+id).disabled) bkSel(id); }));
+  $("#bkOut").addEventListener("pointerdown", () => bkSel("bkOut"));
+  $("#bkIn").addEventListener("pointerdown", () => bkSel("bkIn"));
+  $("#bkIn").onclick = () => { bkSel("bkIn"); $("#bkFile").click(); };
   $("#bkFile").onchange = async e => {
     const f = e.target.files[0]; e.target.value = ""; if(!f) return;
     let data; try { data = JSON.parse(await f.text()); } catch { return toast("File này không phải bản sao lưu hợp lệ."); }
